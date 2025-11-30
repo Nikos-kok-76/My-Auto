@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Auto Pro – Home · Fleet · Bookings · Calendar · Stats</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'; }
+    .cancelled-booking { opacity: 0.5; } 
+    .cancelled-booking .font-medium { text-decoration: line-through; }
+    dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+    .form-input { 
+        @apply w-full px-4 py-3 text-base text-slate-700 bg-white border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 
+               focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition; 
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="px-4 py-3 bg-white shadow-md sticky top-0 z-30 flex items-center justify-between">
+    <a href="#view=home" class="font-bold text-lg flex items-center gap-2 text-slate-800">
+      <span class="text-2xl">🚘</span>
+      <span id="brandName" data-i18n="brand">My Auto</span>
+    </a>
+    <nav class="text-sm font-medium flex gap-4 items-center">
+      <a class="text-slate-600 hover:text-indigo-600" href="#view=home" id="navHome" data-i18n="nav.home">Αρχική σελίδα</a>
+      <a class="text-slate-600 hover:text-indigo-600" href="#view=fleet" id="navFleet" data-i18n="nav.fleet">Στόλος</a>
+      <a class="text-slate-600 hover:text-indigo-600" href="#view=bookings" id="navBookings" data-i18n="nav.bookings">Κρατήσεις</a>
+      <a class="text-slate-600 hover:text-indigo-600" href="#view=calendar" id="navCalendar" data-i18n="nav.calendar">Ημερολόγιο</a>
+      <a class="text-slate-600 hover:text-indigo-600" href="#view=stats" id="navStats" data-i18n="nav.stats">Στατιστικά</a>
+      <div class="ml-4 flex items-center gap-1 border rounded-full p-1 bg-slate-100">
+        <button id="btnLangEL" type="button" class="px-3 py-1 rounded-full text-xs font-semibold">GR</button>
+        <button id="btnLangEN" type="button" class="px-3 py-1 rounded-full text-xs font-semibold">EN</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="p-4 md:p-6 space-y-8">
+    <!-- Home Page -->
+    <section id="homeView" class="max-w-7xl mx-auto hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <aside class="lg:col-span-1">
+                <h3 class="font-bold text-slate-800 mb-4">🔔 <span data-i18n="home.notifications">Ειδοποιήσεις</span></h3>
+                <div id="homeAlertsContainer" class="bg-white border rounded-lg p-4 shadow-sm space-y-2">
+                    <div id="homeAlerts"></div>
+                </div>
+            </aside>
+            <div class="lg:col-span-3 space-y-8">
+                <div>
+                    <h2 class="font-bold text-3xl text-slate-800" data-i18n="home.title">Αρχική</h2>
+                    <p class="text-slate-500 mt-1" data-i18n="home.subtitle">Διαχείριση στόλου οχημάτων</p>
+                </div>
+                <div class="bg-white border rounded-xl p-6 shadow-sm">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer" data-open-here="fleet">
+                            <div><div class="text-4xl mb-2">🚗</div><div class="font-bold text-lg text-slate-800" data-i18n="home.fleet">Στόλος</div><p class="text-sm text-slate-500" data-i18n="home.fleet_desc">Διαχείριση οχημάτων, τιμών και κατάστασης.</p></div>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer" data-open-here="bookings">
+                            <div><div class="text-4xl mb-2">📋</div><div class="font-bold text-lg text-slate-800" data-i18n="home.bookings">Κρατήσεις</div><p class="text-sm text-slate-500" data-i18n="home.bookings_desc">Δημιουργία & επεξεργασία κρατήσεων.</p></div>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer" data-open-here="calendar">
+                            <div><div class="text-4xl mb-2">📆</div><div class="font-bold text-lg text-slate-800" data-i18n="home.calendar">Ημερολόγιο</div><p class="text-sm text-slate-500" data-i18n="home.calendar_desc">Χρωματική διαθεσιμότητα ανά ημέρα/όχημα.</p></div>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer" data-open-here="stats">
+                            <div><div class="text-4xl mb-2">📊</div><div class="font-bold text-lg text-slate-800" data-i18n="home.stats">Στατιστικά</div><p class="text-sm text-slate-500" data-i18n="home.stats_desc">Ημέρες κρατήσεων & εισπράξεις ανά όχημα.</p></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white border rounded-xl p-6 shadow-sm">
+                    <h3 class="font-bold text-lg text-slate-800" data-i18n="backup.title">Backup & Restore</h3>
+                    <p class="text-sm text-slate-500 mt-1 mb-4" data-i18n="backup.description">Αποθηκεύστε ένα αντίγραφο ασφαλείας όλων των οχημάτων και κρατήσεων σε ένα αρχείο JSON, ή επαναφέρετε τα δεδομένα από ένα τέτοιο αρχείο.</p>
+                    <div class="mb-4">
+                        <div class="text-xs text-slate-500 mb-2">
+                            <span data-i18n="backup.auto_info">Αυτόματο backup: καθημερινά στις 16:00</span><br>
+                            <span id="lastBackupInfo">Τελευταίο backup: —</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button id="btnBackup" type="button" class="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700" data-i18n="backup.backup_btn">Backup (JSON)</button>
+                        <button id="btnRestore" type="button" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50" data-i18n="backup.restore_btn">Restore (JSON)</button>
+                        <input type="file" id="restoreFile" accept=".json" class="hidden" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Fleet View -->
+    <section id="fleetView" class="max-w-5xl mx-auto space-y-6 hidden">
+        <div class="flex items-center justify-between">
+            <h2 class="font-bold text-2xl text-slate-800" data-i18n="nav.fleet">Στόλος</h2>
+            <div class="flex items-center gap-3">
+                <a href="#view=home" class="text-sm font-medium text-indigo-600 hover:underline" data-i18n="nav.home">Αρχική σελίδα</a>
+                <button id="btnFleetPDF" type="button" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50">PDF</button>
+                <button id="btnAddVehicle" type="button" class="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700" data-i18n="fleet.new">+ Νέο όχημα</button>
+            </div>
+        </div>
+        <div id="vehiclesList" class="space-y-3"></div>
+    </section>
+
+    <!-- Bookings View -->
+    <section id="bookingsView" class="max-w-5xl mx-auto space-y-6 hidden">
+        <div class="flex items-center justify-between">
+            <h2 class="font-bold text-2xl text-slate-800" data-i18n="nav.bookings">Κρατήσεις</h2>
+            <div class="flex items-center gap-3">
+                <a href="#view=home" class="text-sm font-medium text-indigo-600 hover:underline" data-i18n="nav.home">Αρχική σελίδα</a>
+                <button id="btnExportBookingsPDF" type="button" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50" data-i18n="bookings.export_pdf">Εκτύπωση Λίστας (PDF)</button>
+                <button id="btnAddBooking" type="button" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500" data-i18n="bookings.new">+ Νέα κράτηση</button>
+            </div>
+        </div>
+        <div class="mb-4">
+            <input type="text" id="bookingSearch" placeholder="Αναζήτηση με όνομα ή πινακίδα..." class="form-input md:w-1/3" data-i18n-placeholder="bookings.search_placeholder" />
+        </div>
+        <div id="bookingsList" class="space-y-3"></div>
+    </section>
+<!-- Calendar View -->
+    <section id="calendarView" class="max-w-7xl mx-auto space-y-4 hidden">
+        <div class="flex items-center justify-between">
+            <h2 class="font-bold text-2xl text-slate-800" data-i18n="calendar.title">Ημερολόγιο Διαθεσιμότητας</h2>
+            <div class="flex items-center gap-2">
+                <a href="#view=home" class="text-sm font-medium text-indigo-600 hover:underline" data-i18n="nav.home">Αρχική σελίδα</a>
+                <button id="btnCalPDF" type="button" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50">PDF</button>
+            </div>
+        </div>
+        <div class="bg-white border rounded-xl p-4 grid md:grid-cols-6 gap-4 items-end shadow-sm">
+            <div class="md:col-span-2">
+                <label class="text-xs font-medium text-slate-600" data-i18n="calendar.vehicle">Όχημα</label>
+                <select id="calVehicle" class="form-input mt-2"></select>
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600" data-i18n="calendar.from_date">Από (ημερομηνία)</label>
+                <input id="calFrom" type="date" class="form-input mt-2" />
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600" data-i18n="calendar.days">Μέρες</label>
+                <select id="calDays" class="form-input mt-2">
+                    <option value="14">14</option>
+                    <option value="30" selected>30</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button id="btnCalRefresh" type="button" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50" data-i18n="calendar.refresh">Ανανέωση</button>
+            </div>
+            <div class="text-xs text-slate-500 md:col-span-6 flex items-center gap-4 pt-2">
+                <div class="flex items-center gap-2"><span class="inline-block w-3 h-3 rounded bg-green-200 border"></span> <span data-i18n="legend.free">Διαθέσιμο</span></div>
+                <div class="flex items-center gap-2"><span class="inline-block w-3 h-3 rounded bg-red-300 border"></span> <span data-i18n="legend.full">Δεσμευμένο</span></div>
+                <div class="flex items-center gap-2"><span class="inline-block w-3 h-3 rounded bg-yellow-200 border"></span> <span data-i18n="legend.partial">Μερικώς (ίδια μέρα)</span></div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm overflow-x-auto p-1"><div id="calendarGrid" class="min-w-[720px]"></div></div>
+    </section>
+
+    <!-- Stats View -->
+    <section id="statsView" class="max-w-4xl mx-auto space-y-4 hidden">
+        <div class="flex items-center justify-between">
+            <h2 class="font-bold text-2xl text-slate-800" data-i18n="nav.stats">Στατιστικά</h2>
+            <div class="flex items-center gap-3">
+                <a href="#view=home" class="text-sm font-medium text-indigo-600 hover:underline" data-i18n="nav.home">Αρχική σελίδα</a>
+                <button id="btnStatsPDF" type="button" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50">PDF</button>
+                <button id="btnExportStats" type="button" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50" data-i18n="stats.export_excel">εξαγωγή σε excel</button>
+            </div>
+        </div>
+        <div id="statsWrap" class="bg-white border rounded-xl p-4 shadow-sm overflow-x-auto"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="fixed top-4 right-4 z-[9999] hidden">
+    <div id="toastBox" class="px-4 py-2 rounded-lg shadow-lg text-white text-sm font-semibold"></div>
+  </div>
+  
+  <!-- BOOKING MODAL -->
+  <dialog id="bookingModal" class="rounded-xl p-0 w-[min(780px,95vw)] shadow-2xl">
+    <form id="bookingForm" class="p-6 space-y-6 bg-slate-100">
+      <div class="flex items-center justify-between pb-2 border-b">
+        <h3 class="font-bold text-lg" id="bookingModalTitle" data-i18n="booking.modal_title_new">Νέα κράτηση</h3>
+        <button type="button" class="text-slate-500 hover:text-slate-800" onclick="bookingModal.close()" data-i18n="common.close">Κλείσιμο</button>
+      </div>
+      <input type="hidden" id="bookingId" />
+      <div class="grid md:grid-cols-2 gap-x-6 gap-y-6">
+        <div><label class="text-sm font-medium text-slate-700" data-i18n="booking.vehicle">Όχημα *</label><select id="bVehicle" class="form-input mt-2" required></select></div>
+        <div>
+          <label class="text-sm font-medium text-slate-700" data-i18n="booking.customer">Πελάτης *</label>
+          <input id="bCustomer" class="form-input mt-2 warn-on-greek" required data-i18n-placeholder="booking.customer_placeholder" placeholder="Ονοματεπώνυμο" />
+          <span class="text-xs text-amber-600 h-4 block mt-1 greek-warning-msg"></span>
+        </div>
+        <div><label class="text-sm font-medium text-slate-700" data-i18n="booking.phone">Τηλέφωνο</label><input id="bPhone" class="form-input mt-2" placeholder="69xxxxxxxx" /></div>
+        <div>
+          <label class="text-sm font-medium text-slate-700" data-i18n="booking.country">Χώρα</label>
+          <input id="bCountry" class="form-input mt-2 warn-on-greek" data-i18n-placeholder="booking.country_placeholder" placeholder="π.χ. Ελλάδα" />
+          <span class="text-xs text-amber-600 h-4 block mt-1 greek-warning-msg"></span>
+        </div>
+        <div class="md:col-span-2">
+            <label class="text-sm font-medium text-slate-700" data-i18n="booking.email">Mail</label>
+            <input id="bMail" type="email" class="form-input mt-2" placeholder="example@mail.com" />
+        </div>
+        <div>
+          <label class="text-sm font-medium text-slate-700" data-i18n="booking.rate_tier">Περίοδος τιμολόγησης *</label>
+          <select id="bRateTier" class="form-input mt-2" required>
+            <option value="low" data-i18n="booking.rate_low">Χαμηλή</option>
+            <option value="mid" selected data-i18n="booking.rate_mid">Μεσαία</option>
+            <option value="high" data-i18n="booking.rate_high">Υψηλή</option>
+            <option value="custom" data-i18n="booking.rate_custom">Άλλο</option>
+          </select>
+        </div>
+        <div id="customRateContainer" class="hidden">
+          <label class="text-sm font-medium text-slate-700" data-i18n="booking.custom_rate">Τιμή ανά ημέρα (€) *</label>
+          <input id="bCustomRate" type="number" step="0.01" min="0" class="form-input mt-2" data-i18n-placeholder="booking.custom_rate_placeholder" placeholder="π.χ. 50.00" />
+        </div>
+        <div class="md:col-span-2"><label class="text-sm font-medium text-slate-700" data-i18n="booking.status">Κατάσταση *</label><select id="bStatus" class="form-input mt-2" required><option value="confirmed" data-i18n="booking.status_confirmed">Επιβεβαιωμένη</option><option value="inprogress" data-i18n="booking.status_inprogress">Σε εξέλιξη</option><option value="completed" data-i18n="booking.status_completed">Ολοκληρωμένη</option><option value="cancelled" data-i18n="booking.status_cancelled">Ακυρωμένη</option></select></div>
+        <div class="md:col-span-2"><label class="text-sm font-medium text-slate-700 block mb-2" data-i18n="booking.from_to">Από & Έως *</label><div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <input id="bFromDate" type="date" class="form-input" required /><input id="bFromTime" type="time" class="form-input" required />
+            <input id="bToDate" type="date" class="form-input" required /><input id="bToTime" type="time" class="form-input" required />
+        </div></div>
+        <div><label class="text-sm font-medium text-slate-700" data-i18n="booking.deposit">Προκαταβολή (€)</label><input id="bDeposit" type="number" min="0" step="0.01" class="form-input mt-2" /></div>
+        <div class="md:col-span-2">
+            <label class="text-sm font-medium text-slate-700" data-i18n="booking.notes">Παρατηρήσεις</label>
+            <textarea id="bNotes" class="form-input mt-2 warn-on-greek" rows="2"></textarea>
+            <span class="text-xs text-amber-600 h-4 block mt-1 greek-warning-msg"></span>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-3 text-sm pt-2">
+        <div class="p-2 bg-white rounded-lg border text-center">
+          <div class="text-xs text-slate-500" data-i18n="booking.days_label">Ημέρες</div>
+          <div id="daysOut" class="font-semibold text-base mt-1">—</div>
+        </div>
+        <div class="p-2 bg-white rounded-lg border text-center">
+          <div class="text-xs text-slate-500" data-i18n="booking.total_label">Σύνολο</div>
+          <div id="costOut" class="font-semibold text-base mt-1">—</div>
+        </div>
+        <div class="p-2 bg-white rounded-lg border text-center">
+          <div class="text-xs text-slate-500" data-i18n="booking.balance_label">Υπόλοιπο</div>
+          <div id="balanceOut" class="font-semibold text-base mt-1">—</div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 pt-4">
+        <button type="button" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50" onclick="bookingModal.close()" data-i18n="common.cancel">Άκυρο</button>
+        <button id="btnSaveBooking" type="button" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500" data-i18n="common.save">Αποθήκευση</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- VEHICLE MODAL -->
+  <dialog id="vehicleModal" class="rounded-xl p-0 w-[min(640px,95vw)] shadow-2xl">
+    <form id="vehicleForm" class="p-6 space-y-6 bg-slate-100">
+      <div class="flex items-center justify-between pb-2 border-b">
+        <h3 class="font-bold text-lg" id="vehicleModalTitle" data-i18n="vehicle.modal_title_new">Νέο όχημα</h3>
+        <button type="button" class="text-slate-500 hover:text-slate-800" onclick="vehicleModal.close()" data-i18n="common.close">Κλείσιμο</button>
+      </div>
+      <input type="hidden" id="vehicleId" />
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+        <div>
+            <label class="text-sm font-medium text-slate-700" data-i18n="vehicle.plate">Αρ. Κυκλοφορίας *</label>
+            <input required id="vPlate" class="form-input mt-2 warn-on-greek" placeholder="XXX-1234" />
+            <span class="text-xs text-amber-600 h-4 block mt-1 greek-warning-msg"></span>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-slate-700" data-i18n="vehicle.category">Category *</label>
+            <select id="vCategorySelect" class="form-input mt-2" required>
+                <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="Other" data-i18n="vehicle.category_other">Other</option>
+            </select>
+            <input id="vCategoryManual" class="form-input mt-2 hidden" data-i18n-placeholder="vehicle.category_custom_placeholder" placeholder="Enter custom category (Latin characters only)" />
+        </div>
+        <div>
+            <label class="text-sm font-medium text-slate-700" data-i18n="vehicle.class">Κατηγορία</label>
+            <select id="vClassSelect" class="form-input mt-2">
+                <option>Mini</option><option>Economy</option><option>Compact</option><option>SUV</option><option>Van</option><option data-i18n="vehicle.class_other">Other...</option>
+            </select>
+            <input id="vClassManual" class="form-input mt-2 hidden" data-i18n-placeholder="vehicle.class_custom_placeholder" placeholder="Enter custom category" />
+        </div>
+        <div class="md:col-span-2">
+            <label class="text-sm font-medium text-slate-700" data-i18n="vehicle.model">Μάρκα/Μοντέλο</label>
+            <input id="vModel" class="form-input mt-2 warn-on-greek" data-i18n-placeholder="vehicle.model_placeholder" placeholder="π.χ. Toyota Yaris" />
+            <span class="text-xs text-amber-600 h-4 block mt-1 greek-warning-msg"></span>
+        </div>
+        <div>
+            <label class="text-sm font-medium text-slate-700" data-i18n="vehicle.fuel">Καύσιμο</label>
+            <select id="vFuelSelect" class="form-input mt-2">
+                <option>Petrol</option><option>Diesel</option><option>Hybrid</option><option>Electric</option><option>LPG</option><option data-i18n="vehicle.fuel_other">Other...</option>
+            </select>
+            <input id="vFuelManual" class="form-input mt-2 hidden" data-i18n-placeholder="vehicle.fuel_custom_placeholder" placeholder="Enter custom fuel type" />
+        </div>
+        <div><label class="text-sm font-medium text-slate-700" data-i18n="vehicle.mileage">Χιλιόμετρα</label><input id="vMileage" type="number" min="0" class="form-input mt-2" data-i18n-placeholder="vehicle.mileage_placeholder" placeholder="π.χ. 85000" /></div>
+        <div><label class="text-sm font-medium text-slate-700" data-i18n="vehicle.service_date">Επόμενο Service</label><input id="vServiceDate" type="date" class="form-input mt-2" /></div>
+        <div><label class="text-sm font-medium text-slate-700" data-i18n="vehicle.kteo">Ημ/νία ΚΤΕΟ</label><input id="vKteo" type="date" class="form-input mt-2" /></div>
+        <div><label class="text-sm font-medium text-slate-700" data-i18n="vehicle.emissions">Ημ/νία Κ.Ε.Κ.</label><input id="vEmissions" type="date" class="form-input mt-2" /></div>
+        <div><label class="text-sm font-medium text-slate-700" data-i18n="vehicle.year">Χρονολογία</label><input id="vYear" type="number" min="1990" max="2035" class="form-input mt-2" data-i18n-placeholder="vehicle.year_placeholder" placeholder="π.χ. 2019" /></div>
+        <div class="md:col-span-2">
+            <label class="text-sm font-medium text-slate-700" data-i18n="vehicle.color">Χρώμα</label>
+            <select id="vColorSelect" class="form-input mt-2">
+                <option>White</option><option>Black</option><option>Silver</option><option>Grey</option><option>Blue</option><option>Red</option><option data-i18n="vehicle.color_other">Other...</option>
+            </select>
+            <input id="vColorManual" class="form-input mt-2 hidden" data-i18n-placeholder="vehicle.color_custom_placeholder" placeholder="Enter custom color" />
+        </div>
+        <div class="md:col-span-2">
+            <label class="text-sm font-medium text-slate-700" data-i18n="vehicle.seats">Αριθμός θέσεων</label>
+            <input id="vSeats" type="number" min="2" max="50" class="form-input mt-2" data-i18n-placeholder="vehicle.seats_placeholder" placeholder="π.χ. 5" />
+        </div>
+        <div class="md:col-span-2 pt-2"><label class="text-sm font-bold text-slate-800" data-i18n="vehicle.rates_title">Τιμές (€/ημέρα)</label></div>
+        <div><label class="text-sm font-medium text-slate-700" data-i18n="vehicle.rate_low">Χαμηλή *</label><input required id="vRateLow" type="number" step="0.01" min="0" class="form-input mt-2" data-i18n-placeholder="vehicle.rate_low_placeholder" placeholder="π.χ. 30" /></div>
+        <div><label class="text-sm font-medium text-slate-700" data-i18n="vehicle.rate_mid">Μεσαία *</label><input required id="vRateMid" type="number" step="0.01" min="0" class="form-input mt-2" data-i18n-placeholder="vehicle.rate_mid_placeholder" placeholder="π.χ. 45" /></div>
+        <div><label class="text-sm font-medium text-slate-700" data-i18n="vehicle.rate_high">Υψηλή *</label><input required id="vRateHigh" type="number" step="0.01" min="0" class="form-input mt-2" data-i18n-placeholder="vehicle.rate_high_placeholder" placeholder="π.χ. 60" /></div>
+        <div class="md:col-span-2 flex items-center pt-2 gap-2"><input id="vActive" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" /><label for="vActive" class="text-sm font-medium text-slate-700" data-i18n="vehicle.active">Ενεργό</label></div>
+        <div class="md:col-span-2">
+            <label class="text-sm font-medium text-slate-700" data-i18n="vehicle.notes">Σημειώσεις</label>
+            <textarea id="vNotes" class="form-input mt-2 warn-on-greek" rows="2"></textarea>
+            <span class="text-xs text-amber-600 h-4 block mt-1 greek-warning-msg"></span>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 pt-4">
+        <button type="button" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50" onclick="vehicleModal.close()" data-i18n="common.cancel">Άκυρο</button>
+        <button id="btnSaveVehicle" type="button" class="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700" data-i18n="common.save">Αποθήκευση</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer class="px-6 py-4 text-center text-xs text-slate-400">
+    <span class="cursor-help" title="Copyrights N.Kokolakis - Aug 2025 - @ nkokolakis76@gmail.com">MyAuto v4.10</span>
+  </footer>
+
+  <script>
+const LS_V='crl_vehicles_v4_2', LS_B='crl_bookings_v4_2', LS_LANG='crl_lang_v4_2', LS_KEY='crl_license_v1', LS_LAST_BACKUP='crl_last_backup_v1';
+    const getVehicles=()=> JSON.parse(localStorage.getItem(LS_V)||'[]');
+    const setVehicles=(a)=> localStorage.setItem(LS_V, JSON.stringify(a));
+    const getBookings=()=> JSON.parse(localStorage.getItem(LS_B)||'[]');
+    const setBookings=(a)=> localStorage.setItem(LS_B, JSON.stringify(a));
+    const uid = ()=> Math.random().toString(36).slice(2,10);
+
+    const I18N={ el:{}, en:{} }; 
+    let LANG = localStorage.getItem(LS_LANG) || 'el';
+
+    function applyLang(){
+        const dict=I18N[LANG]||I18N.el;
+        document.querySelectorAll('[data-i18n]').forEach(el=>{ const key=el.getAttribute('data-i18n'); if(dict[key]) el.textContent=dict[key]; });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ const key=el.getAttribute('data-i18n-placeholder'); if(dict[key]) el.placeholder=dict[key]; });
+        document.documentElement.lang = LANG==='en'? 'en':'el';
+        document.getElementById('btnLangEL')?.classList.toggle('bg-indigo-600', LANG==='el');
+        document.getElementById('btnLangEL')?.classList.toggle('text-white', LANG==='el');
+        document.getElementById('btnLangEN')?.classList.toggle('bg-indigo-600', LANG==='en');
+        document.getElementById('btnLangEN')?.classList.toggle('text-white', LANG==='en');
+        updateLastBackupDisplay();
+    }
+    function setLang(l){ LANG=l; localStorage.setItem(LS_LANG, LANG); applyLang(); renderAll(); }
+    document.addEventListener('click', (e)=>{ if(e.target.id==='btnLangEL') setLang('el'); if(e.target.id==='btnLangEN') setLang('en'); });
+
+    function notify(msg,type='info'){
+        const box=document.getElementById('toastBox');
+        box.innerHTML=msg;
+        const typeClasses = { 'error': 'bg-red-600', 'success': 'bg-green-600', 'info': 'bg-slate-800' };
+        box.className = `px-4 py-2 rounded-lg shadow-lg text-white text-sm font-semibold ${typeClasses[type] || typeClasses['info']}`;
+        const wrap=document.getElementById('toast'); wrap.classList.remove('hidden');
+        clearTimeout(window.__t);
+        window.__t=setTimeout(()=>wrap.classList.add('hidden'), 5000);
+    }
+
+    function combineDT(d,t){ return (d&&t)? `${d}T${t}`: ''; }
+    function daysBetween(a,b){ const ms=new Date(b)-new Date(a); return Math.max(1, Math.ceil(ms/86400000)); }
+    function overlapStrict(a1,a2,b1,b2){ const A1=new Date(a1), A2=new Date(a2), B1=new Date(b1), B2=new Date(b2); return (A1<B2)&&(A2>B1); }
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function toISODate(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+    function dayStartISO(d){ return `${toISODate(d)}T00:00`; }
+    function nextDayISO(d){ const nd=new Date(d); nd.setDate(nd.getDate()+1); return dayStartISO(nd); }
+    function buildDateRange(fromISO, days){ const dates=[]; const d=new Date(fromISO+'T00:00'); for(let i=0;i<days;i++){ const cur=new Date(d); cur.setDate(d.getDate()+i); dates.push(new Date(cur)); } return dates; }
+
+    function renderAll() {
+        const currentView = parseHash().view;
+        if (currentView === 'home') checkForUpcomingExpiries();
+        if (currentView === 'fleet') renderVehicles();
+        if (currentView === 'bookings') renderBookings(document.getElementById('bookingSearch').value);
+        if (currentView === 'stats') renderStats();
+        if (currentView === 'calendar') { fillCalendarVehicleSelect(); renderAvailabilityCalendar(); }
+    }
+
+    const views = ['home','fleet','bookings','calendar','stats'];
+    function showView(view){
+        views.forEach(v=> document.getElementById(v+'View')?.classList.add('hidden'));
+        const el=document.getElementById(view+'View'); if(el) el.classList.remove('hidden');
+        renderAll();
+    }
+    function parseHash(){ const h=(location.hash||'').replace(/^#/,''); const params=new URLSearchParams(h.includes('=')? h : 'view=home'); return {view: params.get('view')||'home'}; }
+    function applyHashState(){ const {view}=parseHash(); if(!views.includes(view)) return showView('home'); showView(view); }
+    window.addEventListener('hashchange', applyHashState);
+    document.addEventListener('click',(e)=>{ const here=e.target.closest('[data-open-here]'); if(here){ const v=here.getAttribute('data-open-here'); location.hash=`view=${v}`; return; } });
+
+    function checkForUpcomingExpiries() {
+        const alertsWrap = document.getElementById('homeAlerts'); if (!alertsWrap) return;
+        const alerts = []; const today = new Date(); today.setHours(0, 0, 0, 0);
+        const dict = I18N[LANG] || I18N.el;
+
+        if (localStorage.getItem(LS_KEY) !== 'valid') {
+            alerts.push(`<strong>${dict['notifications.trial'] || 'ΔΟΚΙΜΑΣΤΙΚΗ ΧΡΗΣΗ: Απαιτείται ανανέωση έως 31/12/2025.'}</strong>`);
+        }
+
+        getVehicles().forEach(v => {
+            const checkDate = (dateStr, type) => {
+                if (!dateStr) return; const expiryDate = new Date(dateStr);
+                const diffDays = Math.ceil((expiryDate - today) / 86400000);
+                if (diffDays >= 0 && diffDays <= 7) { 
+                    const dayWord = diffDays === 1 ? (dict['notifications.day'] || 'ημέρα') : (dict['notifications.days'] || 'ημέρες');
+                    const typeTranslated = dict[`notifications.${type.toLowerCase()}`] || type;
+                    const message = dict['notifications.vehicle_needs'] || 'Το όχημα {vehicle} χρειάζεται {type} σε {days} {dayWord}.';
+                    alerts.push(message.replace('{vehicle}', `<strong>${v.plate}</strong>`).replace('{type}', typeTranslated).replace('{days}', `<strong>${diffDays}</strong>`).replace('{dayWord}', dayWord));
+                }
+            };
+            checkDate(v.serviceDate, 'service'); 
+            checkDate(v.kteo, 'kteo'); 
+            checkDate(v.emissions, 'emissions');
+        });
+        if (alerts.length > 0) { alertsWrap.innerHTML = alerts.map(alert => `<div class="p-3 bg-yellow-50 text-yellow-800 rounded-lg">${alert}</div>`).join(''); }
+        else { alertsWrap.innerHTML = `<div class="text-slate-500">${dict['notifications.none'] || 'Δεν υπάρχουν ειδοποιήσεις.'}</div>`; }
+    }
+
+    function checkTrialStatus() {
+        if (localStorage.getItem(LS_KEY) === 'valid') return;
+        const expiryDate = new Date('2025-12-31');
+        const today = new Date();
+        if (today > expiryDate) {
+            let code = '';
+            while(code !== '1234') {
+                code = prompt('Η δοκιμαστική περίοδος έχει λήξει. Εισάγετε τον κωδικό ανανέωσης:');
+                if (code === null) {
+                    document.body.innerHTML = '<div class="p-8 text-center">Η πρόσβαση στην εφαρμογή έχει περιοριστεί.</div>';
+                    return;
+                }
+            }
+            localStorage.setItem(LS_KEY, 'valid');
+            alert('Ευχαριστούμε! Η εφαρμογή ενεργοποιήθηκε.');
+        }
+    }
+
+    (function init(){
+        I18N.el = { 
+            'nav.home':'Αρχική σελίδα','nav.fleet':'Στόλος','nav.bookings':'Κρατήσεις','nav.calendar':'Ημερολόγιο','nav.stats':'Στατιστικά', 
+            'home.title':'Αρχική','home.subtitle':'Διαχείριση στόλου οχημάτων','home.notifications':'Ειδοποιήσεις',
+            'home.fleet':'Στόλος','home.fleet_desc':'Διαχείριση οχημάτων, τιμών και κατάστασης.',
+            'home.bookings':'Κρατήσεις','home.bookings_desc':'Δημιουργία & επεξεργασία κρατήσεων.',
+            'home.calendar':'Ημερολόγιο','home.calendar_desc':'Χρωματική διαθεσιμότητα ανά ημέρα/όχημα.',
+            'home.stats':'Στατιστικά','home.stats_desc':'Ημέρες κρατήσεων & εισπράξεις ανά όχημα.',
+            'backup.title':'Backup & Restore','backup.description':'Αποθηκεύστε ένα αντίγραφο ασφαλείας όλων των οχημάτων και κρατήσεων σε ένα αρχείο JSON, ή επαναφέρετε τα δεδομένα από ένα τέτοιο αρχείο.',
+            'backup.auto_info':'Αυτόματο backup: καθημερινά στις 16:00','backup.last_backup':'Τελευταίο backup:','backup.backup_btn':'Backup (JSON)','backup.restore_btn':'Restore (JSON)',
+            'fleet.new':'+ Νέο όχημα','bookings.new':'+ Νέα κράτηση','bookings.export_pdf':'Εκτύπωση Λίστας (PDF)',
+            'bookings.search_placeholder':'Αναζήτηση με όνομα ή πινακίδα...','bookings.edit_btn':'Επεξ.','bookings.delete_btn':'Διαγραφή','bookings.total_prefix':'Σύνολο:','bookings.balance_prefix':'Υπόλοιπο:',
+            'calendar.title':'Ημερολόγιο Διαθεσιμότητας','calendar.vehicle':'Όχημα','calendar.from_date':'Από (ημερομηνία)','calendar.days':'Μέρες','calendar.refresh':'Ανανέωση',
+            'legend.free':'Διαθέσιμο','legend.full':'Δεσμευμένο','legend.partial':'Μερικώς (ίδια μέρα)',
+            'stats.export_excel':'εξαγωγή σε excel','stats.vehicle':'Όχημα','stats.days':'Ημέρες','stats.revenue':'Έσοδα (€)','stats.totals':'ΣΥΝΟΛΑ',
+            'notifications.trial':'ΔΟΚΙΜΑΣΤΙΚΗ ΧΡΗΣΗ: Απαιτείται ανανέωση έως 31/12/2025.',
+            'notifications.service':'Service','notifications.kteo':'ΚΤΕΟ','notifications.emissions':'Κάρτα Καυσαερίων',
+            'notifications.vehicle_needs':'Το όχημα {vehicle} χρειάζεται {type} σε {days} {dayWord}.',
+            'notifications.day':'ημέρα','notifications.days':'ημέρες','notifications.none':'Δεν υπάρχουν ειδοποιήσεις.',
+            'common.close':'Κλείσιμο','common.cancel':'Άκυρο','common.save':'Αποθήκευση',
+            'booking.modal_title_new':'Νέα κράτηση','booking.modal_title_edit':'Επεξεργασία κράτησης',
+            'booking.vehicle':'Όχημα *','booking.customer':'Πελάτης *','booking.customer_placeholder':'Ονοματεπώνυμο',
+            'booking.phone':'Τηλέφωνο','booking.country':'Χώρα','booking.country_placeholder':'π.χ. Ελλάδα',
+            'booking.email':'Mail','booking.rate_tier':'Περίοδος τιμολόγησης *',
+            'booking.rate_low':'Χαμηλή','booking.rate_mid':'Μεσαία','booking.rate_high':'Υψηλή','booking.rate_custom':'Άλλο',
+            'booking.custom_rate':'Τιμή ανά ημέρα (€) *','booking.custom_rate_placeholder':'π.χ. 50.00',
+            'booking.status':'Κατάσταση *','booking.status_confirmed':'Επιβεβαιωμένη','booking.status_inprogress':'Σε εξέλιξη',
+            'booking.status_completed':'Ολοκληρωμένη','booking.status_cancelled':'Ακυρωμένη',
+            'booking.from_to':'Από & Έως *','booking.deposit':'Προκαταβολή (€)','booking.notes':'Παρατηρήσεις',
+            'booking.days_label':'Ημέρες','booking.total_label':'Σύνολο','booking.balance_label':'Υπόλοιπο',
+            'vehicle.modal_title_new':'Νέο όχημα','vehicle.modal_title_edit':'Επεξεργασία οχήματος',
+            'vehicle.plate':'Αρ. Κυκλοφορίας *','vehicle.category':'Category *','vehicle.category_other':'Other',
+            'vehicle.category_custom_placeholder':'Εισάγετε custom category (μόνο λατινικοί χαρακτήρες)',
+            'vehicle.class':'Κατηγορία','vehicle.class_other':'Other...','vehicle.class_custom_placeholder':'Εισάγετε custom κατηγορία',
+            'vehicle.model':'Μάρκα/Μοντέλο','vehicle.model_placeholder':'π.χ. Toyota Yaris',
+            'vehicle.fuel':'Καύσιμο','vehicle.fuel_other':'Other...','vehicle.fuel_custom_placeholder':'Εισάγετε custom καύσιμο',
+            'vehicle.mileage':'Χιλιόμετρα','vehicle.mileage_placeholder':'π.χ. 85000',
+            'vehicle.service_date':'Επόμενο Service','vehicle.kteo':'Ημ/νία ΚΤΕΟ','vehicle.emissions':'Ημ/νία Κ.Ε.Κ.',
+            'vehicle.year':'Χρονολογία','vehicle.year_placeholder':'π.χ. 2019',
+            'vehicle.color':'Χρώμα','vehicle.color_other':'Other...','vehicle.color_custom_placeholder':'Εισάγετε custom χρώμα',
+            'vehicle.seats':'Αριθμός θέσεων','vehicle.seats_placeholder':'π.χ. 5',
+            'vehicle.rates_title':'Τιμές (€/ημέρα)',
+            'vehicle.rate_low':'Χαμηλή *','vehicle.rate_low_placeholder':'π.χ. 30',
+            'vehicle.rate_mid':'Μεσαία *','vehicle.rate_mid_placeholder':'π.χ. 45',
+            'vehicle.rate_high':'Υψηλή *','vehicle.rate_high_placeholder':'π.χ. 60',
+            'vehicle.active':'Ενεργό','vehicle.notes':'Σημειώσεις',
+            'fleet.no_vehicles':'Δεν υπάρχουν οχήματα ακόμη.',
+            'fleet.fuel':'Καύσιμο','fleet.mileage_short':'Χλμ','fleet.service':'Service',
+            'fleet.kteo':'ΚΤΕΟ','fleet.emissions_short':'Κ.Ε.Κ.','fleet.year':'Έτος',
+            'fleet.seats':'Θέσεις','fleet.rates':'Τιμές','fleet.category':'Category',
+            'fleet.active':'Ενεργό','fleet.inactive':'Ανενεργό',
+            'fleet.btn_edit':'Επεξεργασία','fleet.btn_delete':'Διαγραφή',
+            'messages.no_active_vehicles':'Δεν υπάρχουν ενεργά οχήματα.',
+            'messages.cannot_delete_vehicle':'Δεν μπορείτε να διαγράψετε όχημα με κρατήσεις.',
+            'messages.confirm_delete_vehicle':'Είστε σίγουροι ότι θέλετε να διαγράψετε οριστικά αυτό το όχημα;',
+            'messages.vehicle_deleted':'Το όχημα διαγράφηκε',
+            'messages.seats_warning':'Ο αριθμός θέσεων είναι μεγαλύτερος από 9, που είναι το συνηθισμένο όριο.',
+            'messages.category_required':'Παρακαλώ εισάγετε μια κατηγορία στο πεδίο Category.',
+            'messages.plate_exists':'Αυτή η πινακίδα κυκλοφορίας υπάρχει ήδη.',
+            'messages.plate_exists_other':'Αυτή η πινακίδα κυκλοφορίας υπάρχει ήδη σε άλλο όχημα.',
+            'messages.vehicle_added':'Προστέθηκε νέο όχημα',
+            'messages.vehicle_updated':'Το όχημα ενημερώθηκε',
+            'messages.return_before_pickup':'Η παράδοση πρέπει να είναι μετά την παραλαβή',
+            'messages.confirm_past_date':'Η ημερομηνία έναρξης είναι στο παρελθόν. Θέλετε να συνεχίσετε;',
+            'messages.confirm_deposit_exceeds':'Η προκαταβολή υπερβαίνει το συνολικό κόστος. Θέλετε να συνεχίσετε;',
+            'messages.vehicle_conflict':'Το όχημα είναι δεσμευμένο.',
+            'messages.available_same_category':'Διαθέσιμα οχήματα ίδιας κατηγορίας:',
+            'messages.no_available_same_category':'Δεν βρέθηκαν άλλα διαθέσιμα οχήματα ίδιας κατηγορίας.',
+            'messages.booking_saved':'Η κράτηση αποθηκεύτηκε',
+            'messages.confirm_delete_booking':'Είστε σίγουροι;',
+            'messages.booking_deleted':'Η κράτηση διαγράφηκε',
+            'messages.backup_created':'Το backup δημιουργήθηκε',
+            'messages.backup_failed':'Αποτυχία backup',
+            'messages.auto_backup_completed':'Αυτόματο backup ολοκληρώθηκε<br>Αρχείο αποθηκεύτηκε στον φάκελο Downloads',
+            'messages.auto_backup_failed':'Αποτυχία αυτόματου backup',
+            'messages.confirm_restore':'Θα αντικαταστήσετε όλα τα δεδομένα. Είστε σίγουροι;',
+            'messages.restore_completed':'Η επαναφορά ολοκληρώθηκε',
+            'messages.invalid_backup':'Μη έγκυρο αρχείο backup.',
+            'messages.excel_created':'Το αρχείο Excel δημιουργήθηκε',
+            'messages.excel_failed':'Η εξαγωγή σε Excel απέτυχε:',
+            'messages.pdf_failed':'PDF export failed:',
+            'messages.pdf_library_missing':'PDF library not loaded.',
+            'messages.latin_only_mail':'Επιτρέπονται μόνο λατινικοί χαρακτήρες στο πεδίο Mail.',
+            'messages.latin_recommended':'Προτείνεται η χρήση λατινικών χαρακτήρων.',
+            'messages.category_latin_only':'Category accepts only Latin characters, numbers and spaces.'
+        };
+I18N.en = { 
+            'nav.home':'Home','nav.fleet':'Fleet','nav.bookings':'Bookings','nav.calendar':'Calendar','nav.stats':'Statistics', 
+            'home.title':'Home','home.subtitle':'Fleet Management System','home.notifications':'Notifications',
+            'home.fleet':'Fleet','home.fleet_desc':'Manage vehicles, pricing and status.',
+            'home.bookings':'Bookings','home.bookings_desc':'Create & edit bookings.',
+            'home.calendar':'Calendar','home.calendar_desc':'Color-coded availability per day/vehicle.',
+            'home.stats':'Statistics','home.stats_desc':'Booked days & revenue per vehicle.',
+            'backup.title':'Backup & Restore','backup.description':'Save a backup of all vehicles and bookings to a JSON file, or restore data from such a file.',
+            'backup.auto_info':'Automatic backup: daily at 16:00','backup.last_backup':'Last backup:','backup.backup_btn':'Backup (JSON)','backup.restore_btn':'Restore (JSON)',
+            'fleet.new':'+ New Vehicle','bookings.new':'+ New Booking','bookings.export_pdf':'Export List (PDF)',
+            'bookings.search_placeholder':'Search by name or plate...','bookings.edit_btn':'Edit','bookings.delete_btn':'Delete','bookings.total_prefix':'Total:','bookings.balance_prefix':'Balance:',
+            'calendar.title':'Availability Calendar','calendar.vehicle':'Vehicle','calendar.from_date':'From (date)','calendar.days':'Days','calendar.refresh':'Refresh',
+            'legend.free':'Available','legend.full':'Booked','legend.partial':'Partial (same day)',
+            'stats.export_excel':'export to excel','stats.vehicle':'Vehicle','stats.days':'Days','stats.revenue':'Revenue (€)','stats.totals':'TOTALS',
+            'notifications.trial':'TRIAL VERSION: Renewal required by 31/12/2025.',
+            'notifications.service':'Service','notifications.kteo':'KTEO','notifications.emissions':'Emissions Certificate',
+            'notifications.vehicle_needs':'Vehicle {vehicle} needs {type} in {days} {dayWord}.',
+            'notifications.day':'day','notifications.days':'days','notifications.none':'No notifications.',
+            'common.close':'Close','common.cancel':'Cancel','common.save':'Save',
+            'booking.modal_title_new':'New Booking','booking.modal_title_edit':'Edit Booking',
+            'booking.vehicle':'Vehicle *','booking.customer':'Customer *','booking.customer_placeholder':'Full Name',
+            'booking.phone':'Phone','booking.country':'Country','booking.country_placeholder':'e.g. Greece',
+            'booking.email':'Email','booking.rate_tier':'Rate Tier *',
+            'booking.rate_low':'Low','booking.rate_mid':'Mid','booking.rate_high':'High','booking.rate_custom':'Other',
+            'booking.custom_rate':'Rate per day (€) *','booking.custom_rate_placeholder':'e.g. 50.00',
+            'booking.status':'Status *','booking.status_confirmed':'Confirmed','booking.status_inprogress':'In Progress',
+            'booking.status_completed':'Completed','booking.status_cancelled':'Cancelled',
+            'booking.from_to':'From & To *','booking.deposit':'Deposit (€)','booking.notes':'Notes',
+            'booking.days_label':'Days','booking.total_label':'Total','booking.balance_label':'Balance',
+            'vehicle.modal_title_new':'New Vehicle','vehicle.modal_title_edit':'Edit Vehicle',
+            'vehicle.plate':'Plate Number *','vehicle.category':'Category *','vehicle.category_other':'Other',
+            'vehicle.category_custom_placeholder':'Enter custom category (Latin characters only)',
+            'vehicle.class':'Class','vehicle.class_other':'Other...','vehicle.class_custom_placeholder':'Enter custom class',
+            'vehicle.model':'Make/Model','vehicle.model_placeholder':'e.g. Toyota Yaris',
+            'vehicle.fuel':'Fuel','vehicle.fuel_other':'Other...','vehicle.fuel_custom_placeholder':'Enter custom fuel type',
+            'vehicle.mileage':'Mileage','vehicle.mileage_placeholder':'e.g. 85000',
+            'vehicle.service_date':'Next Service','vehicle.kteo':'KTEO Date','vehicle.emissions':'Emissions Date',
+            'vehicle.year':'Year','vehicle.year_placeholder':'e.g. 2019',
+            'vehicle.color':'Color','vehicle.color_other':'Other...','vehicle.color_custom_placeholder':'Enter custom color',
+            'vehicle.seats':'Number of Seats','vehicle.seats_placeholder':'e.g. 5',
+            'vehicle.rates_title':'Rates (€/day)',
+            'vehicle.rate_low':'Low *','vehicle.rate_low_placeholder':'e.g. 30',
+            'vehicle.rate_mid':'Mid *','vehicle.rate_mid_placeholder':'e.g. 45',
+            'vehicle.rate_high':'High *','vehicle.rate_high_placeholder':'e.g. 60',
+            'vehicle.active':'Active','vehicle.notes':'Notes',
+            'fleet.no_vehicles':'No vehicles yet.',
+            'fleet.fuel':'Fuel','fleet.mileage_short':'Km','fleet.service':'Service',
+            'fleet.kteo':'KTEO','fleet.emissions_short':'Emissions','fleet.year':'Year',
+            'fleet.seats':'Seats','fleet.rates':'Rates','fleet.category':'Category',
+            'fleet.active':'Active','fleet.inactive':'Inactive',
+            'fleet.btn_edit':'Edit','fleet.btn_delete':'Delete',
+            'messages.no_active_vehicles':'No active vehicles.',
+            'messages.cannot_delete_vehicle':'Cannot delete vehicle with bookings.',
+            'messages.confirm_delete_vehicle':'Are you sure you want to permanently delete this vehicle?',
+            'messages.vehicle_deleted':'Vehicle deleted',
+            'messages.seats_warning':'Number of seats is greater than 9, which is the usual limit.',
+            'messages.category_required':'Please enter a category in the Category field.',
+            'messages.plate_exists':'This license plate already exists.',
+            'messages.plate_exists_other':'This license plate already exists on another vehicle.',
+            'messages.vehicle_added':'New vehicle added',
+            'messages.vehicle_updated':'Vehicle updated',
+            'messages.return_before_pickup':'Return must be after pickup',
+            'messages.confirm_past_date':'Start date is in the past. Do you want to continue?',
+            'messages.confirm_deposit_exceeds':'Deposit exceeds total cost. Do you want to continue?',
+            'messages.vehicle_conflict':'Vehicle is booked.',
+            'messages.available_same_category':'Available vehicles of the same category:',
+            'messages.no_available_same_category':'No other available vehicles of the same category found.',
+            'messages.booking_saved':'Booking saved',
+            'messages.confirm_delete_booking':'Are you sure?',
+            'messages.booking_deleted':'Booking deleted',
+            'messages.backup_created':'Backup created',
+            'messages.backup_failed':'Backup failed',
+            'messages.auto_backup_completed':'Auto backup completed<br>File saved to Downloads folder',
+            'messages.auto_backup_failed':'Auto backup failed',
+            'messages.confirm_restore':'This will replace all data. Are you sure?',
+            'messages.restore_completed':'Restore completed',
+            'messages.invalid_backup':'Invalid backup file.',
+            'messages.excel_created':'Excel file created',
+            'messages.excel_failed':'Excel export failed:',
+            'messages.pdf_failed':'PDF export failed:',
+            'messages.pdf_library_missing':'PDF library not loaded.',
+            'messages.latin_only_mail':'Only Latin characters allowed in Email field.',
+            'messages.latin_recommended':'Latin characters recommended.',
+            'messages.category_latin_only':'Category accepts only Latin characters, numbers and spaces.'
+        };
+
+        if(getVehicles().length===0){
+            const today = new Date();
+            const serviceExample = new Date(); serviceExample.setDate(today.getDate() + 5);
+            setVehicles([{id:uid(),plate:'DEM-1234',category:'A',class:'Economy',model:'Toyota Yaris',color:'White',seats:5,year:2022,fuel:'Petrol',mileage:45000,serviceDate:toISODate(serviceExample),kteo:'2026-05-20',emissions:'2025-09-10',rateLow:35,rateMid:45,rateHigh:60,active:true}]);
+        }
+        
+        checkTrialStatus();
+        updateLastBackupDisplay();
+
+        document.addEventListener('input', (e) => {
+            if (e.target.classList.contains('warn-on-greek')) {
+                const warningSpan = e.target.nextElementSibling;
+                if(warningSpan && warningSpan.classList.contains('greek-warning-msg')){
+                    const hasGreek = /[Α-Ωα-ωίϊΐόάέήώΰ]/.test(e.target.value);
+                    warningSpan.textContent = hasGreek ? 'Προτείνεται η χρήση λατινικών χαρακτήρων.' : '';
+                }
+            }
+            if (e.target.id === 'bMail') {
+                const value = e.target.value;
+                const greekRegex = /[Α-Ωα-ωίϊΐόάέήώΰ]/g;
+                if (greekRegex.test(value)) {
+                    e.target.value = value.replace(greekRegex, '');
+                    notify('Επιτρέπονται μόνο λατινικοί χαρακτήρες στο πεδίο Mail.', 'info');
+                }
+            }
+        });
+
+        applyLang();
+        applyHashState();
+    })();
+
+    const vehicleModal=document.getElementById('vehicleModal');
+    function renderVehicles(){
+        const wrap=document.getElementById('vehiclesList'); const arr=getVehicles(); wrap.innerHTML='';
+        const dict = I18N[LANG] || I18N.el;
+        if(!arr.length){ wrap.innerHTML=`<div class="text-sm text-slate-500 p-4 bg-white rounded-lg">${dict['fleet.no_vehicles'] || 'Δεν υπάρχουν οχήματα ακόμη.'}</div>`; return; }
+        arr.forEach(x=>{
+            const card=document.createElement('div'); card.className='bg-white border rounded-xl p-4 shadow-sm flex items-start justify-between gap-4';
+            const detailsHTML = `<div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 mt-2 text-xs text-slate-500">
+                <span><strong>${dict['fleet.fuel'] || 'Καύσιμο'}:</strong> ${x.fuel||'—'}</span><span><strong>${dict['fleet.mileage_short'] || 'Χλμ'}:</strong> ${x.mileage? x.mileage.toLocaleString('el-GR') : '—'}</span>
+                <span><strong>${dict['fleet.service'] || 'Service'}:</strong> ${x.serviceDate||'—'}</span><span><strong>${dict['fleet.kteo'] || 'ΚΤΕΟ'}:</strong> ${x.kteo||'—'}</span>
+                <span><strong>${dict['fleet.emissions_short'] || 'Κ.Ε.Κ.'}:</strong> ${x.emissions||'—'}</span><span><strong>${dict['fleet.year'] || 'Έτος'}:</strong> ${x.year||'—'}</span>
+                <span><strong>${dict['fleet.seats'] || 'Θέσεις'}:</strong> ${x.seats||'—'}</span><span><strong>${dict['fleet.rates'] || 'Τιμές'}:</strong> ${x.rateLow||0}/${x.rateMid||0}/${x.rateHigh||0}€</span>
+                <span><strong>${dict['fleet.category'] || 'Category'}:</strong> ${x.category||'—'}</span>
+            </div>`;
+            const activeText = x.active !== false ? (dict['fleet.active'] || 'Ενεργό') : (dict['fleet.inactive'] || 'Ανενεργό');
+            const activeClass = x.active !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+            card.innerHTML=`<div class="flex-grow">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-lg text-slate-800">${x.plate}</span><span class="text-sm text-slate-600">${x.model||'—'}</span>
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${activeClass}">${activeText}</span>
+                </div> ${detailsHTML} </div>
+            <div class="flex flex-col items-end gap-2 flex-shrink-0">
+                <button type="button" data-action="edit" data-id="${x.id}" class="px-3 py-1.5 w-full rounded-md border text-xs font-semibold">${dict['fleet.btn_edit'] || 'Επεξεργασία'}</button>
+                <button type="button" data-action="delete" data-id="${x.id}" class="px-3 py-1.5 w-full rounded-md border bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold">${dict['fleet.btn_delete'] || 'Διαγραφή'}</button>
+            </div>`; wrap.append(card);
+        });
+    }
+    function openVehicleModal(id){
+        const v=id? getVehicles().find(o=>o.id===id): null;
+        document.getElementById('vehicleForm').reset();
+        document.querySelectorAll('.greek-warning-msg').forEach(el => el.textContent = '');
+        const dict = I18N[LANG] || I18N.el;
+        document.getElementById('vehicleModalTitle').textContent=id? (dict['vehicle.modal_title_edit'] || 'Επεξεργασία οχήματος') : (dict['vehicle.modal_title_new'] || 'Νέο όχημα');
+        document.getElementById('vehicleId').value = '';
+        const today = toISODate(new Date());
+        ['vServiceDate', 'vKteo', 'vEmissions'].forEach(id => document.getElementById(id).min = today);
+
+        const vColorSelect = document.getElementById('vColorSelect');
+        const vColorManual = document.getElementById('vColorManual');
+        const colorOptions = Array.from(vColorSelect.options).map(opt => opt.value);
+
+        const vClassSelect = document.getElementById('vClassSelect');
+        const vClassManual = document.getElementById('vClassManual');
+        const classOptions = Array.from(vClassSelect.options).map(opt => opt.value);
+
+        const vFuelSelect = document.getElementById('vFuelSelect');
+        const vFuelManual = document.getElementById('vFuelManual');
+        const fuelOptions = Array.from(vFuelSelect.options).map(opt => opt.value);
+
+        const vCategorySelect = document.getElementById('vCategorySelect');
+        const vCategoryManual = document.getElementById('vCategoryManual');
+
+        if(v) { 
+            Object.keys(v).forEach(key => { 
+                const el = document.getElementById('v' + key.charAt(0).toUpperCase() + key.slice(1)); 
+                if(el) { if(el.type === 'checkbox') el.checked = v[key]; else el.value = v[key]; } 
+            }); 
+            document.getElementById('vehicleId').value = v.id;
+            
+            const categoryOptions = ['A', 'B', 'C', 'D', 'Other'];
+            if (categoryOptions.includes(v.category)) {
+                vCategorySelect.value = v.category;
+                vCategoryManual.classList.add('hidden');
+            } else {
+                vCategorySelect.value = 'Other';
+                vCategoryManual.value = v.category || '';
+                vCategoryManual.classList.remove('hidden');
+            }
+            
+            if (colorOptions.includes(v.color)) {
+                vColorSelect.value = v.color;
+                vColorManual.classList.add('hidden');
+            } else {
+                vColorSelect.value = 'Other...';
+                vColorManual.value = v.color || '';
+                vColorManual.classList.remove('hidden');
+            }
+
+            if (classOptions.includes(v.class)) {
+                vClassSelect.value = v.class;
+                vClassManual.classList.add('hidden');
+            } else {
+                vClassSelect.value = 'Other...';
+                vClassManual.value = v.class || '';
+                vClassManual.classList.remove('hidden');
+            }
+
+            if (fuelOptions.includes(v.fuel)) {
+                vFuelSelect.value = v.fuel;
+                vFuelManual.classList.add('hidden');
+            } else {
+                vFuelSelect.value = 'Other...';
+                vFuelManual.value = v.fuel || '';
+                vFuelManual.classList.remove('hidden');
+            }
+        } else { 
+            document.getElementById('vActive').checked = true; 
+            vCategorySelect.value = 'A';
+            vCategoryManual.classList.add('hidden');
+            vClassSelect.value = 'Economy'; 
+            vClassManual.classList.add('hidden');
+            vFuelSelect.value = 'Petrol';
+            vFuelManual.classList.add('hidden');
+            vColorSelect.value = 'White';
+            vColorManual.classList.add('hidden');
+        }
+        vehicleModal.showModal();
+    }
+    document.getElementById('vColorSelect').addEventListener('change', (e) => {
+        document.getElementById('vColorManual').classList.toggle('hidden', e.target.value !== 'Other...');
+    });
+    document.getElementById('vClassSelect').addEventListener('change', (e) => {
+        document.getElementById('vClassManual').classList.toggle('hidden', e.target.value !== 'Other...');
+    });
+    document.getElementById('vFuelSelect').addEventListener('change', (e) => {
+        document.getElementById('vFuelManual').classList.toggle('hidden', e.target.value !== 'Other...');
+    });
+    document.getElementById('vCategorySelect').addEventListener('change', (e) => {
+        document.getElementById('vCategoryManual').classList.toggle('hidden', e.target.value !== 'Other');
+    });
+    
+    document.getElementById('vCategoryManual').addEventListener('input', (e) => {
+        const value = e.target.value;
+        const latinOnly = /^[a-zA-Z0-9\s]*$/;
+        if (!latinOnly.test(value)) {
+            e.target.value = value.replace(/[^a-zA-Z0-9\s]/g, '');
+            notify('Category accepts only Latin characters, numbers and spaces.', 'info');
+        }
+    });
+    
+    document.getElementById('fleetView').addEventListener('click',(e)=>{
+        const btn = e.target.closest('button[data-action]'); if (!btn) return;
+        const action = btn.dataset.action, id = btn.dataset.id;
+        const dict = I18N[LANG] || I18N.el;
+        if(action === 'edit'){ openVehicleModal(id); }
+        if(action === 'delete'){
+            if (getBookings().some(b => b.vehicleId === id)) { notify(dict['messages.cannot_delete_vehicle'] || 'Δεν μπορείτε να διαγράψετε όχημα με κρατήσεις.', 'error'); return; }
+            if (confirm(dict['messages.confirm_delete_vehicle'] || 'Είστε σίγουροι ότι θέλετε να διαγράψετε οριστικά αυτό το όχημα;')) { setVehicles(getVehicles().filter(v => v.id !== id)); renderVehicles(); notify(dict['messages.vehicle_deleted'] || 'Το όχημα διαγράφηκε', 'success'); }
+        }
+    });
+    document.getElementById('btnAddVehicle').addEventListener('click', () => openVehicleModal());
+    document.getElementById('btnSaveVehicle').addEventListener('click',(e)=>{
+        e.preventDefault(); const form = document.getElementById('vehicleForm'); if (!form.checkValidity()) { form.reportValidity(); return; }
+        const dict = I18N[LANG] || I18N.el;
+        const id=document.getElementById('vehicleId').value || uid();
+        const seats = parseInt(document.getElementById('vSeats').value||'0');
+        if (seats > 9) { notify(dict['messages.seats_warning'] || 'Ο αριθμός θέσεων είναι μεγαλύτερος από 9, που είναι το συνηθισμένο όριο.', 'info'); }
+        
+        let color = document.getElementById('vColorSelect').value;
+        if (color === 'Other...') {
+            color = document.getElementById('vColorManual').value.trim();
+        }
+
+        let vehicleClass = document.getElementById('vClassSelect').value;
+        if (vehicleClass === 'Other...') {
+            vehicleClass = document.getElementById('vClassManual').value.trim();
+        }
+
+        let fuel = document.getElementById('vFuelSelect').value;
+        if (fuel === 'Other...') {
+            fuel = document.getElementById('vFuelManual').value.trim();
+        }
+
+        let category = document.getElementById('vCategorySelect').value;
+        if (category === 'Other') {
+            category = document.getElementById('vCategoryManual').value.trim();
+            if (!category) {
+                notify(dict['messages.category_required'] || 'Παρακαλώ εισάγετε μια κατηγορία στο πεδίο Category.', 'error');
+                return;
+            }
+        }
+
+        const obj={ id, plate: document.getElementById('vPlate').value.trim().toUpperCase(), category, class: vehicleClass, model: document.getElementById('vModel').value.trim(),
+            color, seats, year: parseInt(document.getElementById('vYear').value||'0'),
+            fuel, mileage: parseInt(document.getElementById('vMileage').value || '0'), serviceDate: document.getElementById('vServiceDate').value,
+            kteo: document.getElementById('vKteo').value, emissions: document.getElementById('vEmissions').value, rateLow: parseFloat(document.getElementById('vRateLow').value||'0'),
+            rateMid: parseFloat(document.getElementById('vRateMid').value||'0'), rateHigh: parseFloat(document.getElementById('vRateHigh').value||'0'),
+            active: document.getElementById('vActive').checked, notes: document.getElementById('vNotes').value.trim() };
+        const arr=getVehicles(); 
+        const idx=arr.findIndex(v=>v.id===id);
+
+        if (idx < 0) {
+            if (arr.some(v => v.plate === obj.plate)) { notify(dict['messages.plate_exists'] || 'Αυτή η πινακίδα κυκλοφορίας υπάρχει ήδη.', 'error'); return; }
+            arr.push(obj);
+        } else {
+            if (arr.some(v => v.plate === obj.plate && v.id !== id)) { notify(dict['messages.plate_exists_other'] || 'Αυτή η πινακίδα κυκλοφορίας υπάρχει ήδη σε άλλο όχημα.', 'error'); return; }
+            arr[idx] = obj;
+        }
+        
+        setVehicles(arr); 
+        vehicleModal.close(); 
+        renderVehicles(); 
+        notify(idx<0? (dict['messages.vehicle_added'] || 'Προστέθηκε νέο όχημα') : (dict['messages.vehicle_updated'] || 'Το όχημα ενημερώθηκε'),'success');
+    });
+
+const bookingModal=document.getElementById('bookingModal');
+    function refreshVehicleSelect(){ const sel=document.getElementById('bVehicle'); if(!sel) return; const active=getVehicles().filter(v=>v.active!==false); sel.innerHTML=active.map(v=>`<option value="${v.id}" data-plate="${v.plate}" data-rate-low="${v.rateLow||0}" data-rate-mid="${v.rateMid||0}" data-rate-high="${v.rateHigh||0}">${v.plate} • ${v.model||''}</option>`).join(''); }
+    
+    function getSelectedRate(){ 
+        const tier=document.getElementById('bRateTier').value; 
+        if(tier==='custom') {
+            return parseFloat(document.getElementById('bCustomRate').value||'0');
+        }
+        const opt=document.querySelector('#bVehicle option:checked'); 
+        if(!opt) return 0; 
+        if(tier==='low') return parseFloat(opt.dataset.rateLow||'0'); 
+        if(tier==='high') return parseFloat(opt.dataset.rateHigh||'0'); 
+        return parseFloat(opt.dataset.rateMid||'0'); 
+    }
+    
+    function updateBookingSummary(){ const rate=getSelectedRate(); const start=combineDT(document.getElementById('bFromDate').value, document.getElementById('bFromTime').value); const end=combineDT(document.getElementById('bToDate').value, document.getElementById('bToTime').value); let days=0,total=0; if(start&&end && new Date(end) > new Date(start)){ days=daysBetween(start,end); total=days*rate; } document.getElementById('daysOut').textContent=days||'—'; document.getElementById('costOut').textContent= total? '€'+total.toFixed(2): '—'; const dep=parseFloat(document.getElementById('bDeposit').value||'0'); document.getElementById('balanceOut').textContent= total? '€'+Math.max(0,total-dep).toFixed(2): '—'; }
+    
+    ;['bVehicle','bRateTier','bFromDate','bFromTime','bToDate','bToTime','bDeposit','bCustomRate'].forEach(id=> document.getElementById(id)?.addEventListener('input', updateBookingSummary));
+    
+    document.getElementById('bRateTier').addEventListener('change', (e) => {
+        const container = document.getElementById('customRateContainer');
+        const customRateInput = document.getElementById('bCustomRate');
+        if(e.target.value === 'custom') {
+            container.classList.remove('hidden');
+            customRateInput.required = true;
+        } else {
+            container.classList.add('hidden');
+            customRateInput.required = false;
+            customRateInput.value = '';
+        }
+        updateBookingSummary();
+    });
+    
+    function openBookingModal(id){
+        refreshVehicleSelect(); 
+        const dict = I18N[LANG] || I18N.el;
+        if(!getVehicles().filter(v=>v.active!==false).length){ notify(dict['messages.no_active_vehicles'] || 'Δεν υπάρχουν ενεργά οχήματα.', 'error'); return; }
+        const b=id? getBookings().find(x=>x.id===id): null; 
+        document.getElementById('bookingForm').reset();
+        document.querySelectorAll('.greek-warning-msg').forEach(el => el.textContent = '');
+        document.getElementById('bookingModalTitle').textContent=id? (dict['booking.modal_title_edit'] || 'Επεξεργασία κράτησης') : (dict['booking.modal_title_new'] || 'Νέα κράτηση'); 
+        document.getElementById('bookingId').value = '';
+        
+        document.getElementById('customRateContainer').classList.add('hidden');
+        document.getElementById('bCustomRate').required = false;
+        document.getElementById('bCustomRate').value = '';
+        
+        if(b){
+            document.getElementById('bookingId').value = b.id;
+            document.getElementById('bVehicle').value = b.vehicleId || '';
+            document.getElementById('bCustomer').value = b.customer || '';
+            document.getElementById('bPhone').value = b.phone || '';
+            document.getElementById('bMail').value = b.mail || '';
+            document.getElementById('bCountry').value = b.country || '';
+            document.getElementById('bDeposit').value = b.deposit || '';
+            document.getElementById('bNotes').value = b.notes || '';
+            document.getElementById('bStatus').value = b.status || 'confirmed';
+            
+            if(b.customRate && b.customRate > 0) {
+                document.getElementById('bRateTier').value = 'custom';
+                document.getElementById('bCustomRate').value = b.customRate;
+                document.getElementById('customRateContainer').classList.remove('hidden');
+                document.getElementById('bCustomRate').required = true;
+            } else {
+                document.getElementById('bRateTier').value = b.rateTier || 'mid';
+            }
+            
+            const sd=new Date(b.start), ed=new Date(b.end);
+            document.getElementById('bFromDate').value=sd.toISOString().slice(0,10); 
+            document.getElementById('bFromTime').value=sd.toTimeString().slice(0,5); 
+            document.getElementById('bToDate').value=ed.toISOString().slice(0,10); 
+            document.getElementById('bToTime').value=ed.toTimeString().slice(0,5);
+        } else {
+            const now=new Date(), plus=new Date(Date.now()+86400000);
+            document.getElementById('bRateTier').value='mid'; document.getElementById('bStatus').value = 'confirmed';
+            document.getElementById('bFromDate').value=toISODate(now); document.getElementById('bFromTime').value='10:00';
+            document.getElementById('bToDate').value=toISODate(plus); document.getElementById('bToTime').value='10:00';
+        }
+        updateBookingSummary(); bookingModal.showModal();
+    }
+    
+    document.getElementById('bookingsView').addEventListener('click',(e)=>{
+        const btn = e.target.closest('button[data-action]'); if(!btn) return;
+        const action = btn.dataset.action, id = btn.dataset.id;
+        const dict = I18N[LANG] || I18N.el;
+        if(action === 'edit'){ openBookingModal(id); }
+        if(action === 'contract'){ const b=getBookings().find(x=>x.id===id); if(b) exportContractPDF(b); }
+        if(action === 'pdf'){ const b=getBookings().find(x=>x.id===id); if(b) exportBookingPDF(b); }
+        if(action === 'delete'){ if (confirm(dict['messages.confirm_delete_booking'] || 'Είστε σίγουροι;')) { setBookings(getBookings().filter(b => b.id !== id)); renderBookings(); notify(dict['messages.booking_deleted'] || 'Η κράτηση διαγράφηκε', 'success'); }}
+    });
+    document.getElementById('btnAddBooking').addEventListener('click', () => openBookingModal());
+    document.getElementById('bookingSearch').addEventListener('input', (e) => renderBookings(e.target.value));
+    
+    document.getElementById('btnSaveBooking').addEventListener('click', ()=>{
+        const form = document.getElementById('bookingForm'); 
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        const dict = I18N[LANG] || I18N.el;
+        
+        const start=combineDT(document.getElementById('bFromDate').value, document.getElementById('bFromTime').value); 
+        const end=combineDT(document.getElementById('bToDate').value, document.getElementById('bToTime').value);
+        
+        if(new Date(end) <= new Date(start)){ 
+            notify(dict['messages.return_before_pickup'] || 'Η παράδοση πρέπει να είναι μετά την παραλαβή', 'error'); 
+            return; 
+        }
+        
+        const today = new Date(); 
+        today.setHours(0,0,0,0);
+        if (new Date(start) < today) {
+            if (!confirm(dict['messages.confirm_past_date'] || 'Η ημερομηνία έναρξης είναι στο παρελθόν. Θέλετε να συνεχίσετε;')) return;
+        }
+        
+        const deposit=parseFloat(document.getElementById('bDeposit').value||'0');
+        const rate = getSelectedRate(); 
+        const days = daysBetween(start,end); 
+        const total = +(days * rate).toFixed(2);
+        
+        if (deposit > total) {
+            if (!confirm(dict['messages.confirm_deposit_exceeds'] || 'Η προκαταβολή υπερβαίνει το συνολικό κόστος. Θέλετε να συνεχίσετε;')) return;
+        }
+
+        const opt=document.querySelector('#bVehicle option:checked'); 
+        const id=document.getElementById('bookingId').value || uid();
+        const rateTier=document.getElementById('bRateTier').value;
+        
+        const obj={ 
+            id, 
+            vehicleId:opt?.value, 
+            vehiclePlate:opt?.dataset.plate || '', 
+            customer:document.getElementById('bCustomer').value.trim(), 
+            phone:document.getElementById('bPhone').value.trim(), 
+            mail:document.getElementById('bMail').value.trim(), 
+            country:document.getElementById('bCountry').value.trim(), 
+            start, 
+            end, 
+            deposit, 
+            notes:document.getElementById('bNotes').value.trim(), 
+            rateTier, 
+            status:document.getElementById('bStatus').value 
+        };
+        
+        if(rateTier === 'custom') {
+            obj.customRate = parseFloat(document.getElementById('bCustomRate').value||'0');
+        }
+        
+        obj.days=days; 
+        obj.rate=rate; 
+        obj.total=total; 
+        obj.balance=+(total - obj.deposit).toFixed(2);
+        
+        const allBookings=getBookings();
+        
+        if (obj.status !== 'cancelled') {
+            const originalBooking = allBookings.find(b => b.id === id);
+            const datesChanged = !originalBooking || originalBooking.start !== obj.start || originalBooking.end !== obj.end;
+            const vehicleChanged = !originalBooking || originalBooking.vehicleId !== obj.vehicleId;
+            
+            if (datesChanged || vehicleChanged) {
+                const conflicts=allBookings.filter(b=> 
+                    b.vehicleId===obj.vehicleId && 
+                    b.id!==obj.id && 
+                    b.status !== 'cancelled' && 
+                    overlapStrict(obj.start,obj.end,b.start,b.end)
+                );
+                
+                if(conflicts.length){ 
+                    const requestedVehicle = getVehicles().find(v => v.id === obj.vehicleId);
+                    const alternatives = getVehicles().filter(v => 
+                        v.active && 
+                        v.category === requestedVehicle.category && 
+                        v.id !== requestedVehicle.id
+                    );
+                    const availableAlternatives = alternatives.filter(alt => 
+                        !allBookings.some(b => 
+                            b.vehicleId === alt.id && 
+                            b.status !== 'cancelled' && 
+                            overlapStrict(obj.start, obj.end, b.start, b.end)
+                        )
+                    );
+                    
+                    let suggestion = "";
+                    if (availableAlternatives.length > 0) {
+                        const altText = dict['messages.available_same_category'] || 'Διαθέσιμα οχήματα ίδιας κατηγορίας:';
+                        suggestion = "<br><br>" + altText + " " + availableAlternatives.map(v => v.plate).join(', ');
+                    } else {
+                        suggestion = "<br><br>" + (dict['messages.no_available_same_category'] || 'Δεν βρέθηκαν άλλα διαθέσιμα οχήματα ίδιας κατηγορίας.');
+                    }
+                    
+                    const conflictMsg = dict['messages.vehicle_conflict'] || 'Το όχημα είναι δεσμευμένο.';
+                    notify(`${conflictMsg}${suggestion}`, 'error');
+                    return;
+                }
+            }
+        }
+        
+        const idx=allBookings.findIndex(x=> x.id===id); 
+        if(idx>=0) allBookings[idx]=obj; 
+        else allBookings.push(obj);
+        
+        setBookings(allBookings); 
+        bookingModal.close(); 
+        renderBookings(); 
+        notify(dict['messages.booking_saved'] || 'Η κράτηση αποθηκεύτηκε','success');
+    });
+    
+    function renderBookings(filterText = ''){
+        const wrap=document.getElementById('bookingsList'); let arr=[...getBookings()];
+        const dict = I18N[LANG] || I18N.el;
+        if(filterText.trim()) { const q = filterText.trim().toLowerCase(); arr = arr.filter(b => b.customer.toLowerCase().includes(q) || b.vehiclePlate.toLowerCase().includes(q)); }
+        arr.sort((a,b)=> new Date(b.start)-new Date(a.start)); wrap.innerHTML='';
+        if(!arr.length){ wrap.innerHTML=`<div class="text-sm text-slate-500 p-4 bg-white rounded-lg">${dict['notifications.none'] || 'Δεν βρέθηκαν κρατήσεις.'}</div>`; return; }
+        const statusMap = { confirmed: { text: dict['booking.status_confirmed'] || 'Επιβεβαιωμένη', color: 'bg-blue-100 text-blue-800' }, inprogress: { text: dict['booking.status_inprogress'] || 'Σε εξέλιξη', color: 'bg-yellow-100 text-yellow-800' }, completed: { text: dict['booking.status_completed'] || 'Ολοκληρωμένη', color: 'bg-green-100 text-green-800' }, cancelled: { text: dict['booking.status_cancelled'] || 'Ακυρωμένη', color: 'bg-slate-100 text-slate-800' } };
+        arr.forEach(b=>{
+            const row=document.createElement('div'); const statusInfo = statusMap[b.status] || statusMap.cancelled;
+            row.className=`bg-white border rounded-xl p-4 shadow-sm flex items-start justify-between gap-4 ${b.status === 'cancelled' ? 'cancelled-booking' : ''}`;
+            const contractLabel = LANG === 'en' ? 'Contract' : 'Συμβόλαιο';
+            row.innerHTML=`<div class="flex-grow"><div class="flex items-center gap-2 mb-1">
+                <div class="font-bold text-slate-800">${b.customer||'—'} — ${b.vehiclePlate||'—'}</div>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${statusInfo.color}">${statusInfo.text}</span></div>
+                <div class="text-xs text-slate-500">${new Date(b.start).toLocaleString(LANG==='en'?'en-GB':'el-GR',{dateStyle:'short',timeStyle:'short'})} → ${new Date(b.end).toLocaleString(LANG==='en'?'en-GB':'el-GR',{dateStyle:'short',timeStyle:'short'})}</div>
+                <div class="text-xs text-slate-500">${dict['bookings.total_prefix']||'Σύνολο:'} €${b.total?.toFixed(2)||'0.00'} • ${dict['bookings.balance_prefix']||'Υπόλοιπο:'} €${b.balance?.toFixed(2)||'0.00'}</div></div>
+                <div class="flex flex-col gap-2 items-center flex-shrink-0">
+                    <button type="button" data-action="edit" data-id="${b.id}" class="px-3 py-1.5 w-full rounded-md border text-xs font-semibold">${dict['bookings.edit_btn']||'Επεξ.'}</button>
+                    <button type="button" data-action="contract" data-id="${b.id}" class="px-3 py-1.5 w-full rounded-md border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold">${contractLabel}</button>
+                    <button type="button" data-action="pdf" data-id="${b.id}" class="px-3 py-1.5 w-full rounded-md border text-xs font-semibold">PDF</button>
+                    <button type="button" data-action="delete" data-id="${b.id}" class="px-3 py-1.5 w-full rounded-md border text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100">${dict['bookings.delete_btn']||'Διαγραφή'}</button>
+                </div>`; wrap.append(row);
+        });
+    }
+
+    function renderAvailabilityCalendar(){ 
+        const grid=document.getElementById('calendarGrid'); if(!grid) return; 
+        const from = document.getElementById('calFrom').value || toISODate(new Date()); 
+        const days = parseInt(document.getElementById('calDays').value||'30'); 
+        const vehicleId = document.getElementById('calVehicle').value||''; 
+        const dates = buildDateRange(from, days); 
+        const bookings = getBookings(); 
+        const vehicles = vehicleId? getVehicles().filter(v=>v.id===vehicleId && v.active) : getVehicles().filter(v=>v.active); 
+        const dict = I18N[LANG] || I18N.el;
+        
+        let html = '<table class="w-full text-xs border-collapse">'; 
+        html += `<thead><tr><th class="sticky left-0 bg-white z-10 border px-2 py-1 text-left">${dict['calendar.vehicle'] || 'Όχημα'}</th>` + dates.map(d=>`<th class="border px-2 py-1 text-center whitespace-nowrap">${d.getDate()}/${d.getMonth()+1}</th>`).join('') + '</tr></thead>'; 
+        html += '<tbody>'; 
+        vehicles.forEach(v=>{ 
+            html += `<tr><td class="sticky left-0 bg-white z-10 border px-2 py-1 font-medium whitespace-nowrap">${v.plate}</td>`; 
+            const vBookings = bookings.filter(b=> b.vehicleId===v.id && b.status !== 'cancelled'); 
+            dates.forEach(d=>{ 
+                const dayOverlaps = vBookings.filter(b=> overlapStrict(dayStartISO(d), nextDayISO(d), b.start, b.end)); 
+                let cls='bg-green-200'; 
+                if(dayOverlaps.length>0){ 
+                    const fullDay = dayOverlaps.some(b=> new Date(b.start) <= new Date(dayStartISO(d)) && new Date(b.end) >= new Date(nextDayISO(d))); 
+                    cls = fullDay? 'bg-red-300' : 'bg-yellow-200'; 
+                } 
+                html += `<td class="border text-center align-middle"><div class="w-5 h-5 inline-block rounded ${cls} border"></div></td>`; 
+            }); 
+            html += `</tr>`; 
+        }); 
+        html += '</tbody></table>'; 
+        grid.innerHTML = html; 
+    }
+    function fillCalendarVehicleSelect(){ 
+        const sel=document.getElementById('calVehicle'); if(!sel) return; 
+        const dict = I18N[LANG] || I18N.el;
+        const allVehiclesText = LANG === 'en' ? 'All vehicles' : 'Όλα τα οχήματα';
+        sel.innerHTML=[`<option value="">${allVehiclesText}</option>`].concat(getVehicles().filter(v=>v.active).map(v=>`<option value="${v.id}">${v.plate} • ${v.model||''}</option>`)).join(''); 
+    }
+    document.getElementById('btnCalRefresh')?.addEventListener('click', renderAvailabilityCalendar);
+    ['calVehicle','calFrom','calDays'].forEach(id=> document.getElementById(id)?.addEventListener('input', renderAvailabilityCalendar));
+    
+    function renderStats(){ 
+        const wrap=document.getElementById('statsWrap'); 
+        const vById=Object.fromEntries(getVehicles().map(v=>[v.id,v])); 
+        const agg={}; 
+        const dict = I18N[LANG] || I18N.el;
+        
+        for(const b of getBookings()){ 
+            if(!vById[b.vehicleId] || b.status === 'cancelled') continue; 
+            const key=b.vehicleId; 
+            if(!agg[key]) agg[key]={ vehicle:vById[b.vehicleId], days:0, total:0 }; 
+            agg[key].days += b.days || 0; 
+            agg[key].total += b.total || 0; 
+        } 
+        const items=Object.values(agg); 
+        let html='<table class="text-sm w-full border-collapse"><thead><tr>';
+        html += `<th class="border px-2 py-1 text-left">${dict['stats.vehicle'] || 'Όχημα'}</th>`;
+        html += `<th class="border px-2 py-1 text-right">${dict['stats.days'] || 'Ημέρες'}</th>`;
+        html += `<th class="border px-2 py-1 text-right">${dict['stats.revenue'] || 'Έσοδα (€)'}</th>`;
+        html += '</tr></thead><tbody>'; 
+        if(!items.length){ 
+            html += `<tr><td class="border px-2 py-2 text-center text-slate-500" colspan="3">${dict['notifications.none'] || 'Δεν υπάρχουν δεδομένα.'}</td></tr>`; 
+        } else { 
+            items.forEach(r=>{ 
+                html += `<tr><td class="border px-2 py-1">${r.vehicle.plate} • ${r.vehicle.model||''}</td><td class="border px-2 py-1 text-right">${r.days}</td><td class="border px-2 py-1 text-right">€${r.total.toFixed(2)}</td></tr>`; 
+            }); 
+        } 
+        const totalDays = items.reduce((s, i) => s + i.days, 0); 
+        const totalRevenue = items.reduce((s, i) => s + i.total, 0); 
+        html += `<tfoot class="font-bold bg-slate-50"><tr><td class="border px-2 py-1 text-left">${dict['stats.totals'] || 'ΣΥΝΟΛΑ'}</td><td class="border px-2 py-1 text-right">${totalDays}</td><td class="border px-2 py-1 text-right">€${totalRevenue.toFixed(2)}</td></tr></tfoot>`; 
+        html += '</table>'; 
+        wrap.innerHTML=html; 
+    }
+    
+    document.getElementById('btnBackup')?.addEventListener('click', () => { 
+        try { 
+            const data = { vehicles: getVehicles(), bookings: getBookings() }; 
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); 
+            const a = document.createElement('a'); 
+            a.href = URL.createObjectURL(blob); 
+            a.download = `myauto-backup-${toISODate(new Date())}.json`; 
+            a.click(); 
+            URL.revokeObjectURL(a.href); 
+            
+            localStorage.setItem(LS_LAST_BACKUP, new Date().toISOString());
+            updateLastBackupDisplay();
+            
+            const dict = I18N[LANG] || I18N.el;
+            notify(dict['messages.backup_created'] || 'Το backup δημιουργήθηκε', 'success'); 
+        } catch (err) { 
+            const dict = I18N[LANG] || I18N.el;
+            notify(dict['messages.backup_failed'] || 'Αποτυχία backup', 'error'); 
+        } 
+    });
+
+    function performAutoBackup() {
+        try {
+            const data = { vehicles: getVehicles(), bookings: getBookings() };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `myauto-auto-backup-${toISODate(new Date())}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            
+            localStorage.setItem(LS_LAST_BACKUP, new Date().toISOString());
+            updateLastBackupDisplay();
+            
+            const dict = I18N[LANG] || I18N.el;
+            notify(dict['messages.auto_backup_completed'] || 'Αυτόματο backup ολοκληρώθηκε<br>Αρχείο αποθηκεύτηκε στον φάκελο Downloads', 'success');
+        } catch (err) {
+            const dict = I18N[LANG] || I18N.el;
+            notify(dict['messages.auto_backup_failed'] || 'Αποτυχία αυτόματου backup', 'error');
+        }
+    }
+
+    function checkAutoBackupTime() {
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        
+        if (hour === 16 && minute === 0) {
+            const lastBackup = localStorage.getItem(LS_LAST_BACKUP);
+            const today = toISODate(now);
+            
+            if (!lastBackup || !lastBackup.startsWith(today)) {
+                performAutoBackup();
+            }
+        }
+    }
+
+    function updateLastBackupDisplay() {
+        const lastBackupEl = document.getElementById('lastBackupInfo');
+        if (!lastBackupEl) return;
+        
+        const dict = I18N[LANG] || I18N.el;
+        const lastBackup = localStorage.getItem(LS_LAST_BACKUP);
+        if (lastBackup) {
+            const date = new Date(lastBackup);
+            lastBackupEl.textContent = `${dict['backup.last_backup'] || 'Τελευταίο backup:'} ${date.toLocaleString(LANG === 'en' ? 'en-GB' : 'el-GR')}`;
+        } else {
+            lastBackupEl.textContent = `${dict['backup.last_backup'] || 'Τελευταίο backup:'} —`;
+        }
+    }
+
+    setInterval(checkAutoBackupTime, 60000);
+    document.getElementById('btnRestore')?.addEventListener('click', () => document.getElementById('restoreFile')?.click());
+    document.getElementById('restoreFile')?.addEventListener('change', (e) => { 
+        const dict = I18N[LANG] || I18N.el;
+        const file = e.target.files[0]; 
+        if (!file || !confirm(dict['messages.confirm_restore'] || 'Θα αντικαταστήσετε όλα τα δεδομένα. Είστε σίγουροι;')) return; 
+        const reader = new FileReader(); 
+        reader.onload = (ev) => { 
+            try { 
+                const data = JSON.parse(ev.target.result); 
+                if (Array.isArray(data.vehicles) && Array.isArray(data.bookings)) { 
+                    setVehicles(data.vehicles); 
+                    setBookings(data.bookings); 
+                    notify(dict['messages.restore_completed'] || 'Η επαναφορά ολοκληρώθηκε', 'success'); 
+                    renderAll(); 
+                } else { 
+                    throw new Error('Invalid file'); 
+                } 
+            } catch (err) { 
+                notify(dict['messages.invalid_backup'] || 'Μη έγκυρο αρχείο backup.', 'error'); 
+            } 
+        }; 
+        reader.readAsText(file); 
+        e.target.value = ''; 
+    });
+
+    function exportContractPDF(b) { 
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const dict = I18N[LANG] || I18N.el;
+            
+            let y = 20;
+            
+            // Επικεφαλίδα - πάντα στα αγγλικά
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            doc.text('VEHICLE RENTAL CONTRACT', 105, y, { align: 'center' });
+            y += 15;
+            
+            // Στοιχεία Κράτησης - πάντα στα αγγλικά
+            doc.setFontSize(12);
+            doc.text('Booking Details', 20, y);
+            y += 8;
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Customer: ${b.customer}`, 20, y); y += 6;
+            doc.text(`Vehicle: ${b.vehiclePlate}`, 20, y); y += 6;
+            if(b.phone) { doc.text(`Phone: ${b.phone}`, 20, y); y += 6; }
+            if(b.mail) { doc.text(`Email: ${b.mail}`, 20, y); y += 6; }
+            if(b.country) { doc.text(`Country: ${b.country}`, 20, y); y += 6; }
+            y += 2;
+            
+            const startDate = new Date(b.start).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
+            const endDate = new Date(b.end).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
+            doc.text(`From: ${startDate}`, 20, y); y += 6;
+            doc.text(`To: ${endDate}`, 20, y); y += 6;
+            doc.text(`Days: ${b.days}`, 20, y); y += 6;
+            y += 2;
+            
+            doc.text(`Rate/day: €${b.rate.toFixed(2)}`, 20, y); y += 6;
+            doc.text(`Total: €${b.total.toFixed(2)}`, 20, y); y += 6;
+            doc.text(`Deposit: €${b.deposit.toFixed(2)}`, 20, y); y += 6;
+            doc.text(`Balance: €${b.balance.toFixed(2)}`, 20, y); y += 10;
+            
+            doc.setDrawColor(200, 200, 200);
+            doc.line(20, y, 190, y);
+            y += 8;
+            
+            // Όροι - πάντα στα αγγλικά
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('GENERAL RENTAL TERMS', 20, y);
+            y += 8;
+            
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'normal');
+            
+            // English terms
+            doc.setFont(undefined, 'bold');
+            doc.text('Requirements for Rental', 20, y); y += 5;
+            doc.setFont(undefined, 'normal');
+            
+            doc.text('Necessary Documentation: Upon collecting the vehicle, you must present your driver\'s', 20, y); y += 4;
+            doc.text('license, passport or ID card, and a credit or debit card.', 20, y); y += 6;
+            
+            doc.text('Minimum Age: You must be at least 23 years old to drive the vehicle.', 20, y); y += 6;
+            
+            doc.text('Additional Drivers: The vehicle cannot be driven by individuals other than the renter or an', 20, y); y += 4;
+            doc.text('additional driver duly registered in the rental agreement.', 20, y); y += 7;
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('Vehicle Usage', 20, y); y += 5;
+            doc.setFont(undefined, 'normal');
+            
+            doc.text('Geographical Restrictions: It is prohibited to take the vehicle off the island without the', 20, y); y += 4;
+            doc.text('explicit permission of the company.', 20, y); y += 6;
+            
+            doc.text('Road Conditions: The vehicle may only be used on paved roads that are safe for driving.', 20, y); y += 4;
+            doc.text('Driving off-road is prohibited.', 20, y); y += 6;
+            
+            doc.text('Prohibited Uses: It is forbidden to use the vehicle for participating in races, giving driving', 20, y); y += 4;
+            doc.text('lessons, subleasing to third parties, or transporting dangerous loads.', 20, y); y += 6;
+            
+            doc.text('Driving Under Influence: Driving under the influence of alcohol or narcotics is strictly', 20, y); y += 4;
+            doc.text('prohibited. The insurance will be invalid if the driver is found to be under such influence.', 20, y); y += 7;
+            
+            if(y > 250) { doc.addPage(); y = 20; }
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('Fuel Policy', 20, y); y += 5;
+            doc.setFont(undefined, 'normal');
+            
+            doc.text('The vehicle will be delivered with a full fuel tank. You must return the vehicle with the tank', 20, y); y += 4;
+            doc.text('equally full. If you fail to do so, the company will charge you for the cost of the missing fuel.', 20, y); y += 7;
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('Vehicle Return and Extensions', 20, y); y += 5;
+            doc.setFont(undefined, 'normal');
+            
+            doc.text('Return: The vehicle must be returned on the date, time, and place agreed upon with the company.', 20, y); y += 6;
+            
+            doc.text('Delays: If you return the vehicle more than one hour late without prior notice, you will be', 20, y); y += 4;
+            doc.text('charged an extra day\'s rental.', 20, y); y += 6;
+            
+            doc.text('Extensions: If you wish to extend the rental, you must notify the company at least 24 hours', 20, y); y += 4;
+            doc.text('before the contract\'s end.', 20, y); y += 7;
+            
+            if(y > 250) { doc.addPage(); y = 20; }
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('Maintenance and Responsibilities', 20, y); y += 5;
+            doc.setFont(undefined, 'normal');
+            
+            doc.text('Vehicle Care: You are responsible for taking care of the vehicle, checking its mechanical', 20, y); y += 4;
+            doc.text('condition, and notifying the company of any problems that arise.', 20, y); y += 6;
+            
+            doc.text('Repairs: You are not authorized to perform any repairs on the vehicle without the company\'s', 20, y); y += 4;
+            doc.text('prior approval.', 20, y); y += 6;
+            
+            doc.text('Fines: You are responsible for any traffic fines received during the rental period and are', 20, y); y += 4;
+            doc.text('obliged to inform the company and pay them.', 20, y); y += 7;
+            
+            if(y > 250) { doc.addPage(); y = 20; }
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('INSURANCE COVERAGE', 20, y); y += 5;
+            doc.setFont(undefined, 'normal');
+            
+            doc.text('General Coverage: The rental vehicle has full insurance coverage.', 20, y); y += 6;
+            
+            doc.text('Insurance coverage includes bodily injury per person, both in your vehicle and in third-party', 20, y); y += 4;
+            doc.text('vehicles, as well as hospital and pharmaceutical coverage in case of an accident.', 20, y); y += 6;
+            
+            doc.text('The insurance also covers vehicle damage from weather phenomena, fire, or explosion.', 20, y); y += 6;
+            
+            doc.text('Free replacement of broken glass is included.', 20, y); y += 6;
+            
+            doc.text('In the event that the rented vehicle is involved in an accident with an uninsured third party,', 20, y); y += 4;
+            doc.text('the insurance covers the damages to your vehicle.', 20, y); y += 7;
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('Conditions and Exclusions', 20, y); y += 5;
+            doc.setFont(undefined, 'normal');
+            
+            doc.text('Accident Report: For the insurance to be valid, any accident must be reported to the police', 20, y); y += 4;
+            doc.text('authorities and the insurance company.', 20, y); y += 6;
+            
+            doc.text('Deductible (Self-Risk): If the cost of damages is less than €500 and is your responsibility,', 20, y); y += 4;
+            doc.text('you will have to cover that amount yourself. This includes situations such as loss or breakage', 20, y); y += 4;
+            doc.text('of the car key, tire damage, or scratches on the vehicle.', 20, y); y += 6;
+            
+            doc.text('If the cost of damages is greater than €500, the insurance will cover the entire amount.', 20, y); y += 6;
+            
+            doc.text('Breach of Terms: In case of theft or damage to the vehicle due to non-compliance with the', 20, y); y += 4;
+            doc.text('mentioned terms (e.g., driving off-road or under the influence of alcohol), the renter will be', 20, y); y += 4;
+            doc.text('responsible for all costs, even if any optional coverage has been accepted.', 20, y); y += 7;
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('Roadside Assistance', 20, y); y += 5;
+            doc.setFont(undefined, 'normal');
+            
+            doc.text('The insurance provides free roadside assistance anywhere on the island in case of breakdown,', 20, y); y += 4;
+            doc.text('accident, or fire. This service is available 24 hours a day.', 20, y);
+            
+            // Υπογραφές στην τελευταία σελίδα
+            if(y > 230) { doc.addPage(); y = 20; } else { y += 15; }
+            
+            doc.setDrawColor(0, 0, 0);
+            doc.line(20, y, 80, y);
+            doc.line(130, y, 190, y);
+            y += 5;
+            doc.setFontSize(9);
+            doc.text('Renter\'s Signature', 20, y);
+            doc.text('Company Signature', 130, y);
+            
+            doc.save(`contract-${b.customer.replace(/\s+/g, '-')}-${toISODate(new Date())}.pdf`);
+            notify(dict['messages.backup_created'] || 'Contract PDF created', 'success');
+        } catch(err) {
+            notify('Contract PDF export failed: ' + err.message, 'error');
+        }
+    }
+    
+    function exportBookingPDF(b) { 
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const dict = I18N[LANG] || I18N.el;
+            
+            doc.setFontSize(16);
+            doc.text('BOOKING CONFIRMATION', 105, 20, { align: 'center' });
+            
+            let y = 40;
+            doc.setFontSize(11);
+            doc.text(`Customer: ${b.customer}`, 20, y); y += 10;
+            doc.text(`Vehicle: ${b.vehiclePlate}`, 20, y); y += 10;
+            doc.text(`Phone: ${b.phone || '-'}`, 20, y); y += 10;
+            doc.text(`Email: ${b.mail || '-'}`, 20, y); y += 10;
+            doc.text(`Country: ${b.country || '-'}`, 20, y); y += 15;
+            
+            doc.text(`From: ${new Date(b.start).toLocaleString(LANG==='en'?'en-GB':'el-GR')}`, 20, y); y += 10;
+            doc.text(`To: ${new Date(b.end).toLocaleString(LANG==='en'?'en-GB':'el-GR')}`, 20, y); y += 10;
+            doc.text(`Days: ${b.days}`, 20, y); y += 15;
+            
+            doc.text(`Rate/day: €${b.rate.toFixed(2)}`, 20, y); y += 10;
+            doc.text(`Total: €${b.total.toFixed(2)}`, 20, y); y += 10;
+            doc.text(`Deposit: €${b.deposit.toFixed(2)}`, 20, y); y += 10;
+            doc.text(`Balance: €${b.balance.toFixed(2)}`, 20, y); y += 15;
+            
+            if(b.notes) {
+                doc.text(`Notes: ${b.notes}`, 20, y, { maxWidth: 170 });
+            }
+            
+            doc.save(`booking-${b.vehiclePlate}-${b.customer}.pdf`);
+            notify(dict['messages.backup_created'] || 'PDF created', 'success');
+        } catch(err) {
+            notify('PDF export failed: ' + err.message, 'error');
+        }
+    }
+    
+    function exportStatsPDF() { 
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const dict = I18N[LANG] || I18N.el;
+            const vById=Object.fromEntries(getVehicles().map(v=>[v.id,v])); 
+            const agg={}; 
+            
+            for(const b of getBookings()){ 
+                if(!vById[b.vehicleId] || b.status === 'cancelled') continue; 
+                const key=b.vehicleId; 
+                if(!agg[key]) agg[key]={ vehicle:vById[b.vehicleId], days:0, total:0 }; 
+                agg[key].days += b.days || 0; 
+                agg[key].total += b.total || 0; 
+            }
+            const items=Object.values(agg);
+            
+            doc.setFontSize(16);
+            doc.text('STATISTICS REPORT', 105, 20, { align: 'center' });
+            
+            let y = 40;
+            doc.setFontSize(10);
+            doc.text('Vehicle', 20, y);
+            doc.text('Days', 120, y);
+            doc.text('Revenue (€)', 160, y);
+            y += 10;
+            
+            items.forEach(r => {
+                doc.text(`${r.vehicle.plate} - ${r.vehicle.model||''}`, 20, y);
+                doc.text(`${r.days}`, 120, y);
+                doc.text(`€${r.total.toFixed(2)}`, 160, y);
+                y += 8;
+            });
+            
+            y += 5;
+            doc.setFontSize(11);
+            const totalDays = items.reduce((s, i) => s + i.days, 0); 
+            const totalRevenue = items.reduce((s, i) => s + i.total, 0);
+            doc.text('TOTALS', 20, y);
+            doc.text(`${totalDays}`, 120, y);
+            doc.text(`€${totalRevenue.toFixed(2)}`, 160, y);
+            
+            doc.save(`statistics-${toISODate(new Date())}.pdf`);
+            notify(dict['messages.backup_created'] || 'PDF created', 'success');
+        } catch(err) {
+            notify('PDF export failed: ' + err.message, 'error');
+        }
+    }
+    
+    function exportCalendarPDF() { 
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4'); // landscape
+            const dict = I18N[LANG] || I18N.el;
+            
+            const from = document.getElementById('calFrom').value || toISODate(new Date()); 
+            const days = parseInt(document.getElementById('calDays').value||'30'); 
+            const vehicleId = document.getElementById('calVehicle').value||''; 
+            const dates = buildDateRange(from, days); 
+            const bookings = getBookings(); 
+            const vehicles = vehicleId? getVehicles().filter(v=>v.id===vehicleId && v.active) : getVehicles().filter(v=>v.active);
+            
+            doc.setFontSize(14);
+            doc.text('AVAILABILITY CALENDAR', 148, 15, { align: 'center' });
+            doc.setFontSize(9);
+            doc.text(`${new Date(from).toLocaleDateString()} - ${dates.length} days`, 148, 22, { align: 'center' });
+            
+            let y = 35;
+            const cellWidth = 8;
+            const cellHeight = 8;
+            const vehicleColWidth = 40;
+            
+            // Headers - Dates
+            doc.setFontSize(7);
+            let x = 15 + vehicleColWidth;
+            dates.forEach(d => {
+                doc.text(`${d.getDate()}/${d.getMonth()+1}`, x + cellWidth/2, y, { align: 'center' });
+                x += cellWidth;
+            });
+            
+            y += 5;
+            
+            // Vehicles and availability
+            vehicles.forEach(v => {
+                if(y > 180) { doc.addPage(); y = 20; }
+                
+                doc.setFontSize(8);
+                doc.text(v.plate, 15, y + 5);
+                
+                const vBookings = bookings.filter(b=> b.vehicleId===v.id && b.status !== 'cancelled');
+                x = 15 + vehicleColWidth;
+                
+                dates.forEach(d => {
+                    const dayOverlaps = vBookings.filter(b=> overlapStrict(dayStartISO(d), nextDayISO(d), b.start, b.end));
+                    let color;
+                    
+                    if(dayOverlaps.length > 0) {
+                        const fullDay = dayOverlaps.some(b=> new Date(b.start) <= new Date(dayStartISO(d)) && new Date(b.end) >= new Date(nextDayISO(d)));
+                        color = fullDay? [255, 150, 150] : [255, 255, 150]; // Red or Yellow
+                    } else {
+                        color = [150, 255, 150]; // Green
+                    }
+                    
+                    doc.setFillColor(...color);
+                    doc.rect(x, y, cellWidth, cellHeight, 'F');
+                    doc.setDrawColor(200, 200, 200);
+                    doc.rect(x, y, cellWidth, cellHeight, 'S');
+                    
+                    x += cellWidth;
+                });
+                
+                y += cellHeight + 2;
+            });
+            
+            // Legend
+            y += 5;
+            doc.setFontSize(7);
+            doc.setFillColor(150, 255, 150);
+            doc.rect(15, y, 5, 5, 'F');
+            doc.text('Available', 22, y + 4);
+            
+            doc.setFillColor(255, 150, 150);
+            doc.rect(50, y, 5, 5, 'F');
+            doc.text('Booked', 57, y + 4);
+            
+            doc.setFillColor(255, 255, 150);
+            doc.rect(85, y, 5, 5, 'F');
+            doc.text('Partial', 92, y + 4);
+            
+            doc.save(`calendar-${toISODate(new Date())}.pdf`);
+            notify(dict['messages.backup_created'] || 'PDF created', 'success');
+        } catch(err) {
+            notify('PDF export failed: ' + err.message, 'error');
+        }
+    }
+    
+    function exportFleetPDF() { 
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const dict = I18N[LANG] || I18N.el;
+            const vehicles = getVehicles();
+            
+            doc.setFontSize(16);
+            doc.text('FLEET REPORT', 105, 20, { align: 'center' });
+            
+            let y = 40;
+            vehicles.forEach(v => {
+                if(y > 270) { doc.addPage(); y = 20; }
+                doc.setFontSize(12);
+                doc.text(`${v.plate} - ${v.model||''}`, 20, y); y += 8;
+                doc.setFontSize(9);
+                doc.text(`Category: ${v.category} | Fuel: ${v.fuel||'-'} | Year: ${v.year||'-'}`, 20, y); y += 6;
+                doc.text(`Rates: €${v.rateLow}/${v.rateMid}/${v.rateHigh} | Seats: ${v.seats||'-'}`, 20, y); y += 10;
+            });
+            
+            doc.save(`fleet-${toISODate(new Date())}.pdf`);
+            notify(dict['messages.backup_created'] || 'PDF created', 'success');
+        } catch(err) {
+            notify('PDF export failed: ' + err.message, 'error');
+        }
+    }
+    
+    function exportBookingsListPDF() { 
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const dict = I18N[LANG] || I18N.el;
+            const bookings = getBookings().sort((a,b)=> new Date(b.start)-new Date(a.start));
+            
+            doc.setFontSize(16);
+            doc.text('BOOKINGS LIST', 105, 20, { align: 'center' });
+            
+            let y = 35;
+            
+            bookings.forEach((b, index) => {
+                if(y > 260) { 
+                    doc.addPage(); 
+                    y = 20; 
+                }
+                
+                // Όνομα πελάτη και πινακίδα (bold)
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text(`${b.customer.toUpperCase()} - ${b.vehiclePlate}`, 20, y);
+                y += 7;
+                
+                // Υπόλοιπα στοιχεία (normal)
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(9);
+                
+                // Ημερομηνίες
+                const startDate = new Date(b.start).toLocaleDateString(LANG==='en'?'en-GB':'el-GR');
+                const endDate = new Date(b.end).toLocaleDateString(LANG==='en'?'en-GB':'el-GR');
+                doc.text(`${startDate} - ${endDate} | €${b.total.toFixed(2)}`, 20, y);
+                y += 5;
+                
+                // Τηλέφωνο και Email
+                if(b.phone || b.mail) {
+                    const contact = [];
+                    if(b.phone) contact.push(`Phone: ${b.phone}`);
+                    if(b.mail) contact.push(`Email: ${b.mail}`);
+                    doc.text(contact.join(' | '), 20, y);
+                    y += 5;
+                }
+                
+                // Χώρα
+                if(b.country) {
+                    doc.text(`Country: ${b.country}`, 20, y);
+                    y += 5;
+                }
+                
+                // Λεπτομέρειες κράτησης
+                doc.text(`Days: ${b.days} | Rate: €${b.rate.toFixed(2)}/day | Deposit: €${b.deposit.toFixed(2)} | Balance: €${b.balance.toFixed(2)}`, 20, y);
+                y += 5;
+                
+                // Status
+                const statusMap = { 
+                    confirmed: 'Confirmed', 
+                    inprogress: 'In Progress', 
+                    completed: 'Completed', 
+                    cancelled: 'Cancelled' 
+                };
+                doc.text(`Status: ${statusMap[b.status] || b.status}`, 20, y);
+                y += 5;
+                
+                // Παρατηρήσεις
+                if(b.notes && b.notes.trim()) {
+                    doc.text(`Notes: ${b.notes}`, 20, y, { maxWidth: 170 });
+                    y += 6;
+                }
+                
+                // Γραμμή διαχωρισμού (αν δεν είναι η τελευταία εγγραφή)
+                if(index < bookings.length - 1) {
+                    y += 2;
+                    doc.setDrawColor(200, 200, 200);
+                    doc.line(20, y, 190, y);
+                    y += 5;
+                }
+            });
+            
+            doc.save(`bookings-list-${toISODate(new Date())}.pdf`);
+            notify(dict['messages.backup_created'] || 'PDF created', 'success');
+        } catch(err) {
+            notify('PDF export failed: ' + err.message, 'error');
+        }
+    }
+    
+    function exportStatsExcel() { 
+        try {
+            const dict = I18N[LANG] || I18N.el;
+            const vById=Object.fromEntries(getVehicles().map(v=>[v.id,v])); 
+            const agg={}; 
+            
+            for(const b of getBookings()){ 
+                if(!vById[b.vehicleId] || b.status === 'cancelled') continue; 
+                const key=b.vehicleId; 
+                if(!agg[key]) agg[key]={ vehicle:vById[b.vehicleId], days:0, total:0 }; 
+                agg[key].days += b.days || 0; 
+                agg[key].total += b.total || 0; 
+            }
+            const items=Object.values(agg);
+            
+            // Δημιουργία δεδομένων για το Excel
+            const data = [
+                ['Vehicle', 'Days', 'Revenue (EUR)']
+            ];
+            
+            items.forEach(r => {
+                data.push([
+                    `${r.vehicle.plate} • ${r.vehicle.model||''}`,
+                    r.days,
+                    parseFloat(r.total.toFixed(2))
+                ]);
+            });
+            
+            const totalDays = items.reduce((s, i) => s + i.days, 0); 
+            const totalRevenue = items.reduce((s, i) => s + i.total, 0);
+            data.push(['TOTALS', totalDays, parseFloat(totalRevenue.toFixed(2))]);
+            
+            // Δημιουργία Excel με SheetJS
+            if(typeof XLSX === 'undefined') {
+                // Fallback σε CSV αν δεν υπάρχει SheetJS
+                let csv = '\ufeff'; // BOM για UTF-8
+                data.forEach(row => {
+                    csv += row.map(cell => {
+                        if(typeof cell === 'string' && cell.includes(',')) {
+                            return `"${cell}"`;
+                        }
+                        return cell;
+                    }).join(',') + '\n';
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `statistics-${toISODate(new Date())}.csv`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } else {
+                // Χρήση SheetJS για πραγματικό Excel
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                
+                // Ορισμός πλάτους στηλών
+                ws['!cols'] = [
+                    { wch: 30 }, // Vehicle
+                    { wch: 8 },  // Days
+                    { wch: 15 }  // Revenue
+                ];
+                
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Statistics');
+                XLSX.writeFile(wb, `statistics-${toISODate(new Date())}.xlsx`);
+            }
+            
+            notify(dict['messages.excel_created'] || 'Excel file created', 'success');
+        } catch(err) {
+            notify('Excel export failed: ' + err.message, 'error');
+        }
+    }
+    
+    document.getElementById('btnStatsPDF')?.addEventListener('click', exportStatsPDF);
+    document.getElementById('btnCalPDF')?.addEventListener('click', exportCalendarPDF);
+    document.getElementById('btnExportBookingsPDF')?.addEventListener('click', exportBookingsListPDF);
+    document.getElementById('btnFleetPDF')?.addEventListener('click', exportFleetPDF);
+    document.getElementById('btnExportStats')?.addEventListener('click', exportStatsExcel);
+  </script>
+</body>
+</html>
+<!-- ========================================================================================= -->
+<!-- Copyrights Nikos Kokolakis - Nkokolakis76@gmail.com / September 2025 / with help from AI :) -->
+<!-- ========================================================================================= -->
